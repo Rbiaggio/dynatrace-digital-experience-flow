@@ -33,6 +33,7 @@ import { usarCopia, usarSegmento, usarQuadros, usarComponentes, BUCKETS_COPIA, B
 import { gravarAgendado, idadeAgendado, USO_RECENTE_INICIO_MS } from "../ui/app/lib/agendado";
 import { linhasQuadroDaHora, juntarHoraQuadros, componentesDe, type EstadoQuadros } from "../ui/app/lib/quadros";
 import { lerQuadros, gravarQuadros } from "../ui/app/lib/quadrosEstado";
+import { lerCopiaDesde } from "../ui/app/lib/copiaDesde";
 import { parteDaRodada } from "../ui/app/lib/workflows";
 import { qUltimaHora, ultimaHoraParaLinhas, qHorasFeitas, unidadesPendentes, chaveJornadas, qHoraSessoes, qHoraReq, qHoraFunis, eventosDaHora, controleDaHora, linhasSessoesParaGravar,
          K_SESSOES, K_REQ, LIMITE_LINHAS_HORA, LIMITE_REQ_LIGACAO, separarReqLigacao, separarQuadrosHora, unidadesFeitas, MS_HORA, execucaoDaHora, periodosDasUnidades, type HorasAnalisadas, type Unidade } from "../ui/app/lib/horaria";
@@ -117,7 +118,9 @@ async function hora(inicio?: number) {
   // pendentes: sem as sessões e os funis de antes da versão dos frames (refeitos uma vez); os períodos contam todas as
   // unidades com controle, porque a leitura usa a execução mais recente de cada uma (a de antes, até ser refeita)
   const feitas = unidadesFeitas(controles), comControle = new Set(controles.map((l) => String(l.unidade)));
-  const pendentes = unidadesPendentes(t0, feitas, fj);
+  // 1.47.4: as horas que terminaram antes da cópia começar (instalação nova) ficam de fora: não há o que analisar
+  const copiaDesde = await lerCopiaDesde();
+  const pendentes = unidadesPendentes(t0, feitas, fj, copiaDesde);
   const feitasAgora: { unidade: string; linhas: number; bytes: number; ms: number }[] = [];
   const juntas = new Set<string>();   // ligações já gravadas pela leitura junta com as requisições da mesma hora
   for (const u of pendentes) {

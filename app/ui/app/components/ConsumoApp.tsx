@@ -102,8 +102,8 @@ export const ConsumoApp: React.FC<{ appId: string }> = ({ appId }) => {
                   <tr className="cs-total"><th>{t("Total", "Total")}</th><td>{reais(totalEmReais(resumo.hoje, precos))}</td><td>{reais(totalEmReais(resumo.periodo, precos))}</td><td>{totalEmReais(resumo.mes, precos) == null ? <span className="cs-nota">{t("com todas as partes projetadas", "once every part is projected")}</span> : reais(totalEmReais(resumo.mes, precos))}</td></tr>
                 </tbody>
               </table>
-              <p className="cfg-rodape">{t(`A projeção segue o ritmo de cada parte nos últimos até 7 dias, a partir de ${HORAS_PARA_PROJETAR} h de dados; a retenção é o volume guardado nos buckets do DEF.`,
-                `The projection follows each part's pace over up to the last 7 days, from ${HORAS_PARA_PROJETAR} h of data on; retention is the volume kept in the DEF buckets.`)}</p>
+              <p className="cfg-rodape">{t(`A projeção segue o ritmo de cada parte nos últimos até 7 dias, a partir de ${HORAS_PARA_PROJETAR} h de dados; a retenção é o volume guardado nos buckets do app.`,
+                `The projection follows each part's pace over up to the last 7 days, from ${HORAS_PARA_PROJETAR} h of data on; retention is the volume kept in the app's buckets.`)}</p>
               {editando ? (
                 <div className="cs-precos">
                   <p className="cfg-acao-nota">{t("Preços do seu contrato em reais, na unidade de cada linha; em branco, vale o preço de lista. Ficam guardados no app.", "Your contract prices in BRL, in each line's unit; left blank, the list price applies. They are kept in the app.")}</p>

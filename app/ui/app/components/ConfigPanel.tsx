@@ -7,6 +7,7 @@ import { getAppId } from "@dynatrace-sdk/app-environment";
 import { sendIntent } from "@dynatrace-sdk/navigation";
 import { formatarInt } from "../lib/graph";
 import { salvarHabilitadas } from "../lib/habilitadas";
+import { gravarCopiaDesde } from "../lib/copiaDesde";
 import { ConsumoApp } from "./ConsumoApp";
 import { lerIdsMobile, gravarIdsMobile } from "../lib/idsMobile";
 import { lerModoAtualizacao, gravarModoAtualizacao, type ModoAtualizacao } from "../lib/atualizacao";
@@ -105,8 +106,12 @@ export const ConfigPanel: React.FC<{ aoFechar: () => void; aoAplicar?: (apps: st
   const executar = async (validarApenas: boolean) => {
     setRodando(validarApenas ? "validar" : "aplicar"); setResultado(null); setErro(null);
     try {
+      // 1.47.4: instalação nova (o bucket da cópia ainda não existe): a hora em que a cópia começa vai para o App State, e a
+      // análise de hora em hora não lê as horas de antes dela (lib/copiaDesde.ts)
+      const t0 = Date.now(), copiaNova = !!estado && Object.values(BUCKETS_PASSOS).every((b) => !estado.buckets[b]);
       const r = await aplicar(clientePlataforma, { apps: [...marcadas], validarApenas, hospedeiroId: destino || null }, estado ?? undefined);
       setResultado(r);
+      if (!validarApenas && copiaNova && r.some((x) => x.passo === `bucket ${BUCKETS_PASSOS.nav}` && x.ok)) await gravarCopiaDesde(t0);
       if (!validarApenas && r.every((x) => x.ok)) { await salvarHabilitadas([...marcadas]); aoAplicar?.([...marcadas]); }
       if (!validarApenas) await carregar();
     } catch (ex) { setErro(ex instanceof Error ? ex.message : String(ex)); }
@@ -179,7 +184,7 @@ export const ConfigPanel: React.FC<{ aoFechar: () => void; aoAplicar?: (apps: st
 
       {!estado ? <p className="painel-vazio cfg-situacao-vazia">{t("lendo a situação do tenant…", "reading the tenant status…")}</p> : (
         <ul className="cfg-situacao" aria-label={t("Situação", "Status")}>
-          <li className={regrasOk ? "ok" : "falta"}><Estado ok={regrasOk} /><div><span>{t("Regras do DEF", "DEF rules")}</span><small>{estado.modo === "integrado" ? t(`dentro de "${estado.hospedeiro?.value?.displayName ?? estado.hospedeiro?.value?.customId ?? ""}"`, `inside "${estado.hospedeiro?.value?.displayName ?? estado.hospedeiro?.value?.customId ?? ""}"`) : t("pipeline próprio rum-flow", "own pipeline rum-flow")}</small></div></li>
+          <li className={regrasOk ? "ok" : "falta"}><Estado ok={regrasOk} /><div><span>{t("Regras do app", "App rules")}</span><small>{estado.modo === "integrado" ? t(`dentro de "${estado.hospedeiro?.value?.displayName ?? estado.hospedeiro?.value?.customId ?? ""}"`, `inside "${estado.hospedeiro?.value?.displayName ?? estado.hospedeiro?.value?.customId ?? ""}"`) : t("pipeline próprio rum-flow", "own pipeline rum-flow")}</small></div></li>
           <li className={estado.appsHabilitadas.length > 0 ? "ok" : "falta"}><Estado ok={estado.appsHabilitadas.length > 0} /><div><span>{t("Aplicações habilitadas", "Enabled applications")}</span><small>{formatarInt(estado.appsHabilitadas.length)}</small></div></li>
           <li className={copiaOk ? "ok" : "falta"}><Estado ok={copiaOk} /><div><span>{t("Cópia e agregados", "Copy and aggregates")}</span><small>{t(`4 buckets de ${RETENCAO_PASSOS} dia + agregados de ${RETENCAO_AGREGADOS} dias`, `4 buckets of ${RETENCAO_PASSOS} day + aggregates of ${RETENCAO_AGREGADOS} days`)}</small></div></li>
           {(() => { const ok = !!controles && TAREFAS_WORKFLOW.every((w) => workflowOk(w.tarefa)); const espera = !ok && !!controles && TAREFAS_WORKFLOW.every((w) => workflowOk(w.tarefa) || aguardando(w.tarefa)); return (
@@ -227,16 +232,16 @@ export const ConfigPanel: React.FC<{ aoFechar: () => void; aoAplicar?: (apps: st
         <section className="cfg-cartao cfg-acoes-cartao">
           <h3>{t("Aplicar", "Apply")}</h3>
           {!podeAplicar ? <p className="cfg-acao-nota">{t("Escolha pelo menos uma aplicação.", "Select at least one application.")}</p>
-            : integrado && marcadas.size === 0 ? <p className="cfg-acao-nota">{t(`Nenhuma aplicação marcada: as regras do DEF saem do pipeline "${nomeDestino}".`, `No application selected: the DEF rules leave the "${nomeDestino}" pipeline.`)}</p>
+            : integrado && marcadas.size === 0 ? <p className="cfg-acao-nota">{t(`Nenhuma aplicação marcada: as regras do app saem do pipeline "${nomeDestino}".`, `No application selected: the app's rules leave the "${nomeDestino}" pipeline.`)}</p>
             : (
               <ul className="cfg-sera">
-                <li><b>{regrasOk ? t("Configurar", "Configure") : t("Criar", "Create")}</b><span>{integrado ? t(`as regras do DEF no pipeline "${nomeDestino}", que já recebe os eventos destas aplicações`, `the DEF rules in the "${nomeDestino}" pipeline, which already receives these applications' events`) : t("o pipeline e a rota do DEF", "the DEF pipeline and route")}</span></li>
-                <li><b>{copiaOk ? t("Configurar", "Configure") : t("Criar", "Create")}</b><span>{t("a cópia das sessões e os buckets do DEF", "the session copy and the DEF buckets")}</span></li>
+                <li><b>{regrasOk ? t("Configurar", "Configure") : t("Criar", "Create")}</b><span>{integrado ? t(`as regras do app no pipeline "${nomeDestino}", que já recebe os eventos destas aplicações`, `the app's rules in the "${nomeDestino}" pipeline, which already receives these applications' events`) : t("o pipeline e a rota do app", "the app's pipeline and route")}</span></li>
+                <li><b>{copiaOk ? t("Configurar", "Configure") : t("Criar", "Create")}</b><span>{t("a cópia das sessões e os buckets do app", "the session copy and the app's buckets")}</span></li>
                 {faltaWorkflow && <li><b>{t("Criar", "Create")}</b><span>{t("o workflow: o botão abaixo abre o app Workflows já preenchido; é só salvar", "the workflow: the button below opens the Workflows app already filled in; just save it")}</span></li>}
                 <li><b>{t("Habilitar", "Enable")}</b><span>{marcadas.size === 1 ? t("1 aplicação", "1 application") : t(`${formatarInt(marcadas.size)} aplicações`, `${formatarInt(marcadas.size)} applications`)}</span></li>
               </ul>
             )}
-          {estado && !integrado && estado.rotasCliente.length > 0 && <p className="painel-erro config-permissao">{t(`Este tenant já roteia user.events para ${estado.rotasCliente.map((x) => `"${x.nome}"`).join(", ")}. Com a rota própria do DEF na frente, esses pipelines deixam de receber os eventos das aplicações marcadas.`, `This tenant already routes user.events to ${estado.rotasCliente.map((x) => `"${x.nome}"`).join(", ")}. With the DEF's own route in front, those pipelines stop receiving the selected applications' events.`)}</p>}
+          {estado && !integrado && estado.rotasCliente.length > 0 && <p className="painel-erro config-permissao">{t(`Este tenant já roteia user.events para ${estado.rotasCliente.map((x) => `"${x.nome}"`).join(", ")}. Com a rota própria do app na frente, esses pipelines deixam de receber os eventos das aplicações marcadas.`, `This tenant already routes user.events to ${estado.rotasCliente.map((x) => `"${x.nome}"`).join(", ")}. With the app's own route in front, those pipelines stop receiving the selected applications' events.`)}</p>}
           <div className="config-acoes">
             <button className="botao-leve" disabled={!!rodando || !estado || !podeAplicar} onClick={() => executar(true)} title={t("Confere tudo com o servidor sem gravar", "Checks everything with the server without writing")}>{rodando === "validar" ? t("conferindo…", "checking…") : t("Conferir", "Check")}</button>
             <button className="botao-primario" disabled={!!rodando || !estado || !podeAplicar} onClick={() => executar(false)}
@@ -250,7 +255,7 @@ export const ConfigPanel: React.FC<{ aoFechar: () => void; aoAplicar?: (apps: st
           {faltaWorkflow && (
             <div className="cfg-criar-wf">
                 <button className={resultado && resultado.every((r) => r.ok) ? "botao-primario" : "botao-leve"} onClick={criarWorkflow}>{t("Criar o workflow", "Create the workflow")}</button>
-                <small>{t("Abre o app Workflows com o workflow do DEF preenchido (a cada 5 minutos, uma tarefa). Confira e salve: você passa a ser o dono e as execuções rodam com a sua permissão.", "Opens the Workflows app with the DEF workflow filled in (every 5 minutes, one task). Check and save: you become the owner and runs use your permissions.")}</small>
+                <small>{t("Abre o app Workflows com o workflow do Digital Experience Flow preenchido (a cada 5 minutos, uma tarefa). Confira e salve: você passa a ser o dono e as execuções rodam com a sua permissão.", "Opens the Workflows app with the Digital Experience Flow workflow filled in (every 5 minutes, one task). Check and save: you become the owner and runs use your permissions.")}</small>
               </div>
             )}
           <p className="cfg-rodape">{t("Os buckets só recebem eventos novos; os agregados aparecem em até 10 minutos.", "Buckets only receive new events; aggregates show up within 10 minutes.")}</p>

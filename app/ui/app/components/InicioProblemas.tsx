@@ -29,31 +29,39 @@ interface Props {
   assist?: boolean; apps: AppInfo[]; janela: string; robos: boolean;
   chipApp: ((id: string) => React.ReactNode) | null;
   aoVerSessoes: (f: FiltroSessoes) => void; aoDestacar: (d: Destaque) => void; aoAbrirPagina: (app: string, view: string, aba?: AbaPagina) => void;
+  /** 1.47.4: o texto da lista vazia quando a primeira hora ainda não foi analisada (instalação nova) */
+  vazio?: string;
 }
 
 const VISIVEIS = 4;
 const nomePagina = (v: string) => (v === SEM_NOME ? t("(sem nome)", "(no name)") : v);
 const pctTexto = (p: number) => (p > 0 && p < 1 ? "<1%" : `${Math.round(p)}%`);
 
-export const Problemas: React.FC<Props> = ({ problemas, caminhos, series, geradoEm, periodoImpacto, assist, grafo, apps, janela, robos, chipApp, aoVerSessoes, aoDestacar, aoAbrirPagina }) => {
+/** Os itens do cartão: as páginas com erro e o que o fluxo mostra sem página com erro ligada a ele (o ligado vira frase
+    no cartão da página: "tentam de novo"). 1.47.5: a Visão geral conta os mesmos itens no resumo do cabeçalho. */
+export const chavePagina = (app: string | null, view: string) => `${app}|${view}`;
+export function itensDoCartao(problemas: ProblemaPagina[], grafo: Grafo, nomeApp: (id: string | null) => string) {
+  const comProblema = new Set(problemas.map((p) => chavePagina(p.app, p.view)));
+  const extras = new Map<string, Destaque[]>();
+  const soltos: Destaque[] = [];
+  for (const d of calcularDestaques(grafo, nomeApp, 12)) {
+    const nos = d.nos.map((id) => grafo.nos.find((n) => n.id === id)).filter((n): n is NoFluxo => !!n);
+    const alvo = nos.find((n) => comProblema.has(chavePagina(n.app, n.nome)));
+    if (alvo) { if (d.tipo === "laco-erro" || d.tipo === "vai-erro") { const k = chavePagina(alvo.app, alvo.nome); extras.set(k, [...(extras.get(k) ?? []), d]); } continue; }
+    soltos.push(d);
+  }
+  return { extras, itens: [...problemas.map((p) => ({ tipo: "pagina" as const, p })), ...soltos.map((d) => ({ tipo: "fluxo" as const, d }))] };
+}
+
+export const Problemas: React.FC<Props> = ({ problemas, caminhos, series, geradoEm, periodoImpacto, assist, grafo, apps, janela, robos, chipApp, aoVerSessoes, aoDestacar, aoAbrirPagina, vazio }) => {
   // cartões sem página (fluxo): "Ver sessões e Replay" só se alguma aplicação da tela grava replay (lib/replay.ts)
   const mapaReplay = useReplayApps();
   const rotuloFluxo = rotuloVerSessoes(mapaReplay && apps.length > 0 && apps.every((a) => replayDaApp(a.id, apps, mapaReplay) === "desligado") ? "desligado" : "desconhecido");
   const [todos, setTodos] = useState(false);
   const nomeApp = (id: string | null) => apps.find((a) => a.id === id)?.nome ?? id ?? "";
-  const chave = (app: string | null, view: string) => `${app}|${view}`;
-  const comProblema = new Set(problemas.map((p) => chave(p.app, p.view)));
-  // o que o fluxo mostra: ligado a uma página com erro vira frase no cartão dela ("tentam de novo"); o resto, cartão próprio
-  const extras = new Map<string, Destaque[]>();
-  const soltos: Destaque[] = [];
-  for (const d of calcularDestaques(grafo, nomeApp, 12)) {
-    const nos = d.nos.map((id) => grafo.nos.find((n) => n.id === id)).filter((n): n is NoFluxo => !!n);
-    const alvo = nos.find((n) => comProblema.has(chave(n.app, n.nome)));
-    if (alvo) { if (d.tipo === "laco-erro" || d.tipo === "vai-erro") { const k = chave(alvo.app, alvo.nome); extras.set(k, [...(extras.get(k) ?? []), d]); } continue; }
-    soltos.push(d);
-  }
-  const itens = [...problemas.map((p) => ({ tipo: "pagina" as const, p })), ...soltos.map((d) => ({ tipo: "fluxo" as const, d }))];
-  if (itens.length === 0) return <p className="painel-vazio">{t("Nada afetando os clientes neste período: nenhum erro da aplicação e nenhuma etapa onde muitos param.", "Nothing affecting customers in this timeframe: no application errors and no step where many stop.")}</p>;
+  const chave = chavePagina;
+  const { extras, itens } = itensDoCartao(problemas, grafo, nomeApp);
+  if (itens.length === 0) return <p className="painel-vazio">{vazio ?? t("Nada afetando os clientes neste período: nenhum erro da aplicação e nenhuma etapa onde muitos param.", "Nothing affecting customers in this timeframe: no application errors and no step where many stop.")}</p>;
   const lista = todos ? itens : itens.slice(0, VISIVEIS);
 
   return (

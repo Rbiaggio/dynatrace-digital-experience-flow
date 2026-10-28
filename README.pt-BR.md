@@ -114,8 +114,9 @@ O diagrama está no [README em inglês](README.md#how-it-works).
 
 5. **Crie o workflow.** Clique em **Criar o workflow**: o app Workflows abre já preenchido, é só salvar.
 
-Os primeiros números aparecem em até 10 minutos; fluxos, páginas mais visitadas e funis (últimas 24 horas) completam
-ao longo do primeiro dia.
+Os primeiros números aparecem em até 10 minutos. Fluxos, páginas mais visitadas, funis e o que está afetando os clientes
+saem da análise de hora em hora: a primeira hora analisada fica pronta em até 2 horas depois da configuração (a Visão
+geral mostra o horário previsto), e as últimas 24 horas completam ao longo do primeiro dia.
 
 ### Extras opcionais
 

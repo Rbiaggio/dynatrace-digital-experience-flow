@@ -172,8 +172,9 @@ flowchart LR
 
 5. **Create the workflow.** Click **Create the workflow**: the Workflows app opens already filled in, just save it.
 
-The first numbers show up within 10 minutes; flows, most visited pages and funnels (last 24 hours) fill in over the
-first day.
+The first numbers show up within 10 minutes. Flows, most visited pages, funnels and what is affecting customers come
+from the hourly analysis: the first analyzed hour is ready within 2 hours of the configuration (the Overview shows
+the expected time), and the last 24 hours fill in over the first day.
 
 ### Optional extras
 

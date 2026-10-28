@@ -53,7 +53,7 @@ export function avaliarQualidade(g: Grafo, linhas: LinhaQualidade[], nomeApp: (i
       out.push({ id: `hibrido-android|${app}`, app, titulo: t("WebView do Android sem monitoramento híbrido", "Android WebView without hybrid monitoring"),
         detalhe: t(`${nome}: ${int(wvA)} cargas de página vieram da WebView do app Android e ${wvAH === 0 ? "nenhuma" : `só ${pct(wvAH, wvA)}%`} traz o monitoramento híbrido. Sem ele, cada página começa um fluxo próprio, sem ligação com a tela do app que a abriu.${ios}`,
                    `${nome}: ${int(wvA)} page loads came from the Android app's WebView and ${wvAH === 0 ? "none" : `only ${pct(wvAH, wvA)}%`} carry hybrid monitoring. Without it, each page starts a flow of its own, not linked to the app screen that opened it.${ios}`),
-        correcao: t("Ligar o monitoramento híbrido do agente Dynatrace na WebView do app Android, como já está no iOS. O DEF passa a ligar cada página à tela do app que a abriu.", "Enable the Dynatrace agent's hybrid monitoring for the Android app's WebView, as on iOS. DEF then links each page to the app screen that opened it."),
+        correcao: t("Ligar o monitoramento híbrido do agente Dynatrace na WebView do app Android, como já está no iOS. O Digital Experience Flow passa a ligar cada página à tela do app que a abriu.", "Enable the Dynatrace agent's hybrid monitoring for the Android app's WebView, as on iOS. Digital Experience Flow then links each page to the app screen that opened it."),
         quem: t("time do app Android", "Android app team") });
     }
     // com o monitoramento híbrido ligado (dt.rum.adk) o DEF costura a WebView na sessão do app: não é problema; e, quando a

@@ -8,7 +8,7 @@ import { t } from "../lib/i18n";
 import { entidadeDaApp, hrefErrosPagina } from "./Links";
 import { ListaSessoes, type FiltroSessoes } from "./ListaSessoes";
 import type { SessaoLenta } from "./ListaSessoes";
-import { Problemas } from "./InicioProblemas";
+import { Problemas, itensDoCartao } from "./InicioProblemas";
 import { Fluxos } from "./InicioFluxos";
 import { CartaoExperiencia } from "./InicioExperiencia";
 import { CartoesMapas, type FiltroLugar } from "./InicioMapas";
@@ -22,6 +22,8 @@ import { falhasMobile, sessoesNaJanela, textoNota, type Apdex, type ApdexMobile 
 import { ufDe, type LinhaApdexLugar, type LinhaLugar } from "../lib/lugares";
 import { ChipApp } from "./ChipApp";
 import { semTempoRealEmUso, fimDosAgregados } from "../lib/agregados";
+import { lerCopiaDesde } from "../lib/copiaDesde";
+import { previsaoPrimeiraHora } from "../lib/horaria";
 import type { AbaPagina } from "./DetailPanel";
 import { IconeTipo } from "./FlowGraph";
 import { DocumentStackIcon, GroupIcon, LogoutIcon, RepairIcon, UserSessionsIcon, WarningIcon } from "@dynatrace/strato-icons";
@@ -115,6 +117,17 @@ export const Inicio: React.FC<Props> = ({ lerLentas, assist, apps, app, todas, j
   const { desistiram, naoConcluiram } = dados ? numerosVisaoGeral(dados) : { desistiram: 0, naoConcluiram: 0 };
   const fluxosComErro = dados ? dados.caminhos.filter((c) => c.comErro.some((x) => x > 0)).length : 0;
   const maisVista = dados?.maisVisitadas[0];
+  // 1.47.4: nenhuma hora analisada ainda (instalação nova): os cartões que saem da análise de hora em hora dizem isso, e
+  // quando ela sai (pela hora em que a cópia começou, lib/copiaDesde.ts), em vez de "nenhuma página com erro"
+  const [copiaDesde, setCopiaDesde] = useState<number | null>(null);
+  useEffect(() => { void lerCopiaDesde().then(setCopiaDesde); }, []);
+  const previsao = copiaDesde ? previsaoPrimeiraHora(copiaDesde) : null;
+  const aguardando = copiaDesde != null && !!dados?.periodos && !dados.periodos.dia;
+  const sai = previsao && previsao > Date.now() ? t(` (sai por volta das ${hhmm(previsao)})`, ` (expected around ${hhmm(previsao)})`) : "";
+  // o resumo do cabeçalho conta o que o cartão mostra: as páginas com erro e os destaques do fluxo ao vivo (1.47.5)
+  const itensAfetando = dados ? itensDoCartao(problemasComErros(dados), grafo, nomeApp).itens.length : 0;
+  const resumoAguardando = <span className="in-resumo">{t(`aguardando a primeira hora analisada${sai}`, `waiting for the first analyzed hour${sai}`)}</span>;
+  const corpoAguardando = (pt: string, en: string) => t(`${pt} saem da análise de hora em hora, e a primeira hora ainda não foi analisada${sai}.`, `${en} come from the hourly analysis, and the first hour has not been analyzed yet${sai}.`);
 
   // Oportunidades de melhoria: as regras (lib/oportunidades.ts) sobre o que a tela já leu, sem consulta. O "Onde falha no
   // backend?" entra quando alguém já o abriu (nesta aba, neste escopo, nos últimos 5 min): ouvirOrigens recalcula
@@ -259,29 +272,33 @@ export const Inicio: React.FC<Props> = ({ lerLentas, assist, apps, app, todas, j
           )}
 
           <Cartao titulo={t("O que está afetando os clientes", "What is affecting customers")}
-                  resumo={dados.problemas.length === 0 ? <span className="in-resumo">{t("nenhuma página com erro", "no page with errors")}</span>
+                  resumo={itensAfetando === 0 ? (aguardando ? resumoAguardando : <span className="in-resumo">{t("nenhuma página com erro", "no page with errors")}</span>)
+                    : dados.problemas.length === 0 ? <span className="in-resumo">{itensAfetando === 1 ? t("1 item do fluxo", "1 flow item") : t(`${itensAfetando} itens do fluxo`, `${itensAfetando} flow items`)}</span>
                     : <>{desistiram > 0 && <span className="pb-selo grave">{t(`${formatarInt(desistiram)} desistiram após um erro`, `${formatarInt(desistiram)} gave up after an error`)}</span>}
                         {naoConcluiram > 0 && <span className="pb-selo grave">{t(`${formatarInt(naoConcluiram)} não concluíram por erro`, `${formatarInt(naoConcluiram)} did not complete due to an error`)}</span>}
                         <span className="pb-selo">{dados.problemas.length === 1 ? t("1 página com erro", "1 page with errors") : t(`${dados.problemas.length} páginas com erro`, `${dados.problemas.length} pages with errors`)}</span></>} nota={`${dados.periodos?.dia ? `${t("erros do período escolhido, ao vivo; saídas das últimas 24 h", "errors from the chosen timeframe, live; exits from the last 24 h")} · ` : ""}${t("do maior impacto para o menor · cada item diz o que fazer e quem faz", "from the biggest impact to the smallest · each item says what to do and who does it")}`}>
             <Problemas problemas={problemasComErros(dados)} caminhos={dados.caminhos} series={dados.series} geradoEm={dados.geradoEm} periodoImpacto={dados.periodos?.dia ?? null} assist={assist} grafo={grafo} apps={apps} janela={janela} robos={robos} chipApp={chipApp}
-                       aoVerSessoes={setSessoes} aoDestacar={aoDestacar} aoAbrirPagina={aoAbrirPagina} />
+                       aoVerSessoes={setSessoes} aoDestacar={aoDestacar} aoAbrirPagina={aoAbrirPagina}
+                       vazio={aguardando ? `${corpoAguardando("As páginas com erro e onde os clientes desistem", "Pages with errors and where customers give up")} ${t("As sessões com erro da última hora já aparecem no alto, em \"Sessões com erro\".", "Sessions with errors from the last hour are already shown at the top, in \"Sessions with errors\".")}` : undefined} />
           </Cartao>
 
           <InicioOportunidades dados={dados} resultado={op} entrada={entradaOp} apps={apps} app={app} todas={todas} janela={janela} robos={robos} assist={assist}
                                aoVerSessoes={(p) => setSessoes({ soSaiu: false, view: p.view, appView: p.app })} aoAbrirPagina={aoAbrirPagina}
-                               llm={ajudaLlm} apdexMobile={apdexMobileOp} carregando={carregando} />
+                               llm={ajudaLlm} apdexMobile={apdexMobileOp} carregando={carregando}
+                               aguardando={aguardando ? { resumo: resumoAguardando, corpo: t(`A maior parte das oportunidades sai da análise de hora em hora, e a primeira hora ainda não foi analisada${sai}.`, `Most opportunities come from the hourly analysis, and the first hour has not been analyzed yet${sai}.`) } : null} />
 
           <Cartao titulo={t("Principais fluxos", "Main flows")}
                   resumo={<>{fluxosComErro > 0 && <span className="pb-selo">{t(`${fluxosComErro} com etapa com erro`, `${fluxosComErro} with a failing step`)}</span>}
-                            <span className="in-resumo">{t(`${dados.caminhos.length} fluxos`, `${dados.caminhos.length} flows`)}</span></>} nota={`${dados.periodos?.dia ? `${textoDia(dados.periodos.dia)} · ` : ""}${t("os caminhos que os clientes mais fazem, etapa por etapa, e onde eles têm erro ou desistem", "the paths customers take most, step by step, and where they hit errors or give up")}`}>
-            {dados.caminhos.length === 0 ? <p className="painel-vazio">{t("Nenhum fluxo neste período.", "No flows in this timeframe.")}</p>
+                            {dados.caminhos.length === 0 && aguardando ? resumoAguardando : <span className="in-resumo">{t(`${dados.caminhos.length} fluxos`, `${dados.caminhos.length} flows`)}</span>}</>} nota={`${dados.periodos?.dia ? `${textoDia(dados.periodos.dia)} · ` : ""}${t("os caminhos que os clientes mais fazem, etapa por etapa, e onde eles têm erro ou desistem", "the paths customers take most, step by step, and where they hit errors or give up")}`}>
+            {dados.caminhos.length === 0 ? <p className="painel-vazio">{aguardando ? corpoAguardando("Os fluxos", "Flows") : t("Nenhum fluxo neste período.", "No flows in this timeframe.")}</p>
               : <Fluxos caminhos={dados.caminhos} chipApp={chipApp} janela={janela} robos={robos} erroDaPagina={erroDaPagina} hrefErros={(a, v) => hrefErrosPagina(entidadeDaApp(apps, a), v, janela)}
                         aoVerSessoes={setSessoes} aoAbrirPagina={aoAbrirPagina} />}
           </Cartao>
 
           <Cartao titulo={t("Páginas mais visitadas", "Most visited pages")}
-                  resumo={maisVista ? <span className="in-resumo">{t(`a mais visitada: ${maisVista.view} (${pctTexto(maisVista.pctVisitas)})`, `most visited: ${maisVista.view} (${pctTexto(maisVista.pctVisitas)})`)}</span> : undefined} nota={dados.periodos?.dia ? `${textoDia(dados.periodos.dia)} · ${t("fatia de todas as páginas vistas", "share of all page views")}` : t("fatia de todas as páginas vistas no período", "share of all page views in the timeframe")}>
-            <Paginas dados={dados} chipApp={chipApp} aoAbrirPagina={aoAbrirPagina} />
+                  resumo={maisVista ? <span className="in-resumo">{t(`a mais visitada: ${maisVista.view} (${pctTexto(maisVista.pctVisitas)})`, `most visited: ${maisVista.view} (${pctTexto(maisVista.pctVisitas)})`)}</span> : aguardando ? resumoAguardando : undefined} nota={dados.periodos?.dia ? `${textoDia(dados.periodos.dia)} · ${t("fatia de todas as páginas vistas", "share of all page views")}` : t("fatia de todas as páginas vistas no período", "share of all page views in the timeframe")}>
+            {!maisVista && aguardando ? <p className="painel-vazio">{corpoAguardando("As páginas mais visitadas", "The most visited pages")}</p>
+              : <Paginas dados={dados} chipApp={chipApp} aoAbrirPagina={aoAbrirPagina} />}
           </Cartao>
 
           {ajustesTela.length > 0 && (
@@ -307,6 +324,7 @@ const hhmm = (ms: number) => new Date(ms).toLocaleTimeString(t("pt-BR", "en-US")
 /** "últimas 24 h analisadas, até hh:mm" (com menos horas, quantas). */
 const textoDia = (d: { de: number; ate: number; horas: number }) => (d.horas >= 24
   ? t(`últimas 24 h analisadas, até ${hhmm(d.ate)}`, `last 24 h analyzed, up to ${hhmm(d.ate)}`)
+  : d.horas === 1 ? t(`1 hora analisada, até ${hhmm(d.ate)}`, `1 hour analyzed, up to ${hhmm(d.ate)}`)
   : t(`últimas ${d.horas} h analisadas, até ${hhmm(d.ate)}`, `last ${d.horas} h analyzed, up to ${hhmm(d.ate)}`));
 /** A legenda das bases de tempo da Visão geral (1.43): de quando é cada parte. */
 function legendaPeriodos(p: NonNullable<DadosInicio["periodos"]>) {

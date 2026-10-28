@@ -453,7 +453,7 @@ export function gerarAnaliseLlmPdf(d: DadosAnalisePdf): Uint8Array {
     if (s.ondas.length) {
       f.titulo(t("Plano em ondas", "Plan in waves"), 2);
       for (const onda of ["30", "60", "90"] as const) for (const w of s.ondas.filter((x) => x.onda === onda)) {
-        const partes = [{ s: m(w.objetivo), b: true }, ...w.acoes.map((a) => ({ s: `- ${m(a)}`, b: false })), ...(w.indicadorDef ? [{ s: m(`${t("Prova no DEF", "Proof in DEF")}: ${w.indicadorDef}`), b: false }] : [])]
+        const partes = [{ s: m(w.objetivo), b: true }, ...w.acoes.map((a) => ({ s: `- ${m(a)}`, b: false })), ...(w.indicadorDef ? [{ s: m(`${t("Prova no Digital Experience Flow", "Proof in Digital Experience Flow")}: ${w.indicadorDef}`), b: false }] : [])]
           .map((x) => ({ ...x, ls: f.partir(x.s, LARG - 10, { tam: x.b ? 9 : 8.5, estilo: x.b ? "bold" : "normal" }) }));
         const h = 9 + partes.reduce((acc, x) => acc + x.ls.length * f.lh(x.b ? 9 : 8.5) + 0.6, 0);
         f.quebra(h);
@@ -494,7 +494,7 @@ export function gerarAnaliseLlmPdf(d: DadosAnalisePdf): Uint8Array {
     if (c.cadeia.length) { f.titulo(t("Cadeia de evidências", "Evidence chain"), 2); c.cadeia.forEach((e, k) => f.bloco(m(`${k + 1}. ${e.evidencia}${e.prova ? `: ${e.prova}` : ""}${e.fonte ? ` (${e.fonte})` : ""}`), { tam: 8.6, x: M + 2, depois: 0.8 })); f.bloco(m(`${t("Por que essa confiança", "Why this confidence")}: ${c.justificativa}`), { tam: 8.2, cor: COR.sub }); }
     if (c.descartadas.length) { f.titulo(t("Hipóteses descartadas", "Ruled-out hypotheses"), 2); for (const h of c.descartadas) f.bloco(m(`- ${h.hipotese}: ${h.porQue}`), { tam: 8.6, x: M + 2, depois: 0.6 }); }
     if (c.emAberto.length) { f.titulo(t("Em aberto e como confirmar", "Open and how to confirm"), 2); for (const h of c.emAberto) f.bloco(m(`- ${h.hipotese}: ${h.comoConfirmar}`), { tam: 8.6, x: M + 2, depois: 0.6 }); }
-    f.titulo(t("Como provar o ganho no DEF", "How to prove the gain in DEF"), 2);
+    f.titulo(t("Como provar o ganho no Digital Experience Flow", "How to prove the gain in Digital Experience Flow"), 2);
     f.bloco(m(`${x.validacao.indicadorDef}. ${t("Hoje", "Today")}: ${x.validacao.linhaDeBase}. ${t("Meta", "Target")}: ${x.validacao.meta}. ${x.validacao.comoMedir}`), { tam: 8.6, x: M + 2 });
     f.bloco(m(`${t("Esforço", "Effort")} ${ESF_TXT(x.esforco.nivel)}: ${x.esforco.justificativa}${x.riscos.length ? ` ${t("Riscos", "Risks")}: ${x.riscos.join("; ")}` : ""}`), { tam: 8.4, cor: COR.sub });
   }
@@ -506,7 +506,7 @@ export function gerarAnaliseLlmPdf(d: DadosAnalisePdf): Uint8Array {
     f.preencher(COR.marca); f.pdf.rect(M, A4.a - 12.4, 6, 0.8, "F");
     f.tracar(COR.linha, 0.2); f.pdf.line(M + 7, A4.a - 12, M + LARG, A4.a - 12);
     f.fonte({ tam: 7.5, cor: COR.sub });
-    f.pdf.text(latin1(t("Análise por LLM feita com IA a partir dos dossiês de evidências do DEF. Confira antes de agir.", "LLM analysis made with AI from DEF evidence dossiers. Verify before acting.")), M, A4.a - 8);
+    f.pdf.text(latin1(t("Análise por LLM feita com IA a partir dos dossiês de evidências do Digital Experience Flow. Confira antes de agir.", "LLM analysis made with AI from Digital Experience Flow evidence dossiers. Verify before acting.")), M, A4.a - 8);
     f.pdf.text(latin1(t(`página ${p} de ${n}`, `page ${p} of ${n}`)), M + LARG, A4.a - 8, { align: "right" });
   }
   return f.pdf.bytes();

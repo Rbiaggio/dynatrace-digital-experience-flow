@@ -32,15 +32,24 @@ export const inicioDaHora = (ms: number) => Math.floor(ms / MS_HORA) * MS_HORA;
 const porSessao = (p: ParteHora) => p === "sessoes" || p === "funis";
 /** A hora h (início, ms) já pode ser analisada nesta parte. */
 export const horaPronta = (h: number, parte: ParteHora, agora: number) => agora >= h + MS_HORA + (porSessao(parte) ? FIM_SESSAO_MIN * 60000 : 0) + ATRASO_MIN * 60000;
+/** Margem antes do começo da cópia (1.47.5): evento que chega atrasado (ingestão, lote do mobile) e relógio do navegador
+    de quem aplicou. Registro mais de 1 hora no futuro não vale (relógio muito errado: tudo segue como antes). */
+export const MARGEM_COPIA_MS = 10 * 60000;
+export const limiteDaCopia = (copiaDesde: number | null, agora: number) => (copiaDesde == null || copiaDesde > agora + MS_HORA ? null : Math.min(copiaDesde, agora) - MARGEM_COPIA_MS);
+/** Por volta de quando sai a primeira hora analisada de uma cópia que começou em `desde` (1.47.4): a parte das sessões
+    espera a hora fechar, as sessões terminarem e o atraso da ingestão, e a análise roda a cada 15 min; arredondado a 5 min. */
+export const previsaoPrimeiraHora = (desde: number) => Math.ceil((inicioDaHora(desde - MARGEM_COPIA_MS) + MS_HORA + (FIM_SESSAO_MIN + ATRASO_MIN + 15) * 60000) / 300000) * 300000;
 /** Unidade de trabalho: hora + parte (+ a chave das jornadas nos funis). */
 export const unidadeDe = (h: number, parte: ParteHora, extra = "") => `${iso(h)}|${parte}${extra ? `|${extra}` : ""}`;
 export interface Unidade { hora: number; parte: ParteHora; unidade: string }
 /** As unidades que faltam nas HORAS_CONFERIDAS mais recentes, da hora mais recente para a mais antiga (a tela usa as 24 h;
-    a recente importa mais). `funis` = chave das jornadas (null = sem jornada salva). */
-export function unidadesPendentes(agora: number, feitas: Set<string>, funis: string | null): Unidade[] {
-  const ultima = inicioDaHora(agora) - MS_HORA, lista: Unidade[] = [];
+    a recente importa mais). `funis` = chave das jornadas (null = sem jornada salva). `copiaDesde` (1.47.4) = quando a cópia
+    começou (lib/copiaDesde.ts): a hora que terminou antes dela (com a margem) não tem o que analisar e fica de fora. */
+export function unidadesPendentes(agora: number, feitas: Set<string>, funis: string | null, copiaDesde: number | null = null): Unidade[] {
+  const ultima = inicioDaHora(agora) - MS_HORA, lista: Unidade[] = [], limite = limiteDaCopia(copiaDesde, agora);
   for (let i = 0; i < HORAS_CONFERIDAS; i++) {
     const h = ultima - i * MS_HORA;
+    if (limite != null && h + MS_HORA <= limite) break;
     for (const parte of PARTES_HORA) {
       if ((parte === "funis" && !funis) || !horaPronta(h, parte, agora)) continue;
       const unidade = unidadeDe(h, parte, parte === "funis" ? funis! : "");

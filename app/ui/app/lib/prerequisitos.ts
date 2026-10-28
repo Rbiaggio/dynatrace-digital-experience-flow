@@ -349,7 +349,7 @@ export async function aplicar(c: ClienteHttp, o: OpcoesAplicar, estado?: EstadoP
   if (prontos) await rota(t("roteamento de business events", "business events routing"), SCHEMAS.rotaBiz, e.rotaPassos ?? (e as any).rotaPassosObjeto ?? null, pp ?? e.pipelinePassos?.objectId ?? null, MATCHER_ROTA_BIZ, "Digital Experience Flow: copia enxuta de navegacao/erro");
   // sem a rota de business events pronta, a cópia não é ligada (iria para o bucket padrão do tenant)
   if (!o.validarApenas && (!prontos || r.slice(antesBiz).some((x) => !x.ok))) {
-    r.push({ passo: t("regras de cópia", "copy rules"), ok: false, detalhe: t("não ligadas: os buckets e a rota de business events do DEF precisam estar prontos antes; aplique de novo", "not turned on: the DEF buckets and business events route must be ready first; apply again") });
+    r.push({ passo: t("regras de cópia", "copy rules"), ok: false, detalhe: t("não ligadas: os buckets e a rota de business events do app precisam estar prontos antes; aplique de novo", "not turned on: the app's buckets and business events route must be ready first; apply again") });
     return r;
   }
 
@@ -361,10 +361,10 @@ export async function aplicar(c: ClienteHttp, o: OpcoesAplicar, estado?: EstadoP
     if (!host) { r.push({ passo: t("pipeline de user.events", "user.events pipeline"), ok: false, detalhe: t("o pipeline escolhido não foi encontrado", "the chosen pipeline was not found") }); return r; }
     const novo = integrarNoPipeline(host.value, o.apps);
     const longo = [...(novo.processing?.processors ?? []), ...(novo.metricExtraction?.processors ?? []), ...(novo.dataExtraction?.processors ?? [])].find((p: any) => ehRegraDef(p) && String(p.matcher).length > LIMITE_MATCHER);
-    if (longo) { r.push({ passo: t(`regras do DEF dentro de "${nome}"`, `DEF rules inside "${nome}"`), ok: false, detalhe: t(`filtro com mais de ${LIMITE_MATCHER} caracteres: habilite menos aplicações`, `filter longer than ${LIMITE_MATCHER} characters: enable fewer applications`) }); return r; }
+    if (longo) { r.push({ passo: t(`regras do app dentro de "${nome}"`, `app rules inside "${nome}"`), ok: false, detalhe: t(`filtro com mais de ${LIMITE_MATCHER} caracteres: habilite menos aplicações`, `filter longer than ${LIMITE_MATCHER} characters: enable fewer applications`) }); return r; }
     const doCliente = (v: any) => JSON.stringify(["processing", "metricExtraction", "dataExtraction", "storage"].map((st) => ((v?.[st]?.processors ?? []) as any[]).filter((p) => !ehRegraDef(p))));
-    if (doCliente(novo) !== doCliente(host.value)) { r.push({ passo: t(`regras do DEF dentro de "${nome}"`, `DEF rules inside "${nome}"`), ok: false, detalhe: t("trava de segurança: as regras do próprio pipeline mudariam; nada foi gravado", "safety check: the pipeline's own rules would change; nothing was written") }); return r; }
-    await objeto(t(`regras do DEF dentro de "${nome}" (${o.apps.length ? `cópia das sessões e de experiência, ${o.apps.length} aplicação(ões)` : "removidas"})`, `DEF rules inside "${nome}" (${o.apps.length ? `session and experience copy, ${o.apps.length} application(s)` : "removed"})`), SCHEMAS.pipelinesEventos, novo, host);
+    if (doCliente(novo) !== doCliente(host.value)) { r.push({ passo: t(`regras do app dentro de "${nome}"`, `app rules inside "${nome}"`), ok: false, detalhe: t("trava de segurança: as regras do próprio pipeline mudariam; nada foi gravado", "safety check: the pipeline's own rules would change; nothing was written") }); return r; }
+    await objeto(t(`regras do app dentro de "${nome}" (${o.apps.length ? `cópia das sessões e de experiência, ${o.apps.length} aplicação(ões)` : "removidas"})`, `app rules inside "${nome}" (${o.apps.length ? `session and experience copy, ${o.apps.length} application(s)` : "removed"})`), SCHEMAS.pipelinesEventos, novo, host);
     // rota: a do pipeline fica; só ganha as aplicações mobile que ela não pega, e a rota própria do DEF (se houver) sai
     const entradas: any[] = [...(e.rotaEventos?.value?.routingEntries ?? [])];
     const doDef = (x: any) => x.pipelineId === e.pipelineEventos?.objectId || DO_DEF.test(String(x.description ?? ""));
@@ -376,28 +376,28 @@ export async function aplicar(c: ClienteHttp, o: OpcoesAplicar, estado?: EstadoP
       const faltam = o.apps.filter((a) => a.includes("-") && !String(semDef[ih].matcher ?? "").includes(`"${a}"`));
       if (faltam.length) semDef[ih] = { ...semDef[ih], matcher: `${semDef[ih].matcher} or ${matcherApps(faltam)}` };
       if (faltam.length || semDef.length !== entradas.length) {
-        const rotulo = [faltam.length ? t(`+${faltam.length} aplicação(ões) mobile na rota de "${nome}"`, `+${faltam.length} mobile application(s) on the "${nome}" route`) : "", semDef.length !== entradas.length ? t("rota própria do DEF removida", "DEF's own route removed") : ""].filter(Boolean).join(" · ");
+        const rotulo = [faltam.length ? t(`+${faltam.length} aplicação(ões) mobile na rota de "${nome}"`, `+${faltam.length} mobile application(s) on the "${nome}" route`) : "", semDef.length !== entradas.length ? t("rota própria do app removida", "the app's own route removed") : ""].filter(Boolean).join(" · ");
         rotaOk = (await objeto(`${t("roteamento de user.events", "user.events routing")} (${rotulo})`, SCHEMAS.rotaEventos, { routingEntries: semDef }, e.rotaEventos)) !== null || !!o.validarApenas;
       } else r.push({ passo: t("roteamento de user.events", "user.events routing"), ok: true, detalhe: t(`sem mudança: a rota de "${nome}" já traz os eventos`, `unchanged: the "${nome}" route already brings the events`) });
     }
     // pipeline próprio de uma configuração anterior: sai depois que a rota dele saiu
     if (e.pipelineEventos) {
-      if (o.validarApenas) r.push({ passo: t("pipeline próprio de user.events do DEF", "DEF's own user.events pipeline"), ok: true, detalhe: t("seria removido (as regras agora ficam dentro do pipeline escolhido)", "would be removed (rules now live inside the chosen pipeline)") });
-      else if (!rotaOk) r.push({ passo: t("pipeline próprio de user.events do DEF", "DEF's own user.events pipeline"), ok: false, detalhe: t("mantido: a rota não foi atualizada", "kept: the route was not updated") });
-      else { const x = await c.chamar("DELETE", `${SETTINGS}/${e.pipelineEventos.objectId}`); r.push({ passo: t("pipeline próprio de user.events do DEF", "DEF's own user.events pipeline"), ok: x.status < 300, detalhe: x.status < 300 ? t("removido", "removed") : resumo(x.dados) }); }
+      if (o.validarApenas) r.push({ passo: t("pipeline próprio de user.events do app", "the app's own user.events pipeline"), ok: true, detalhe: t("seria removido (as regras agora ficam dentro do pipeline escolhido)", "would be removed (rules now live inside the chosen pipeline)") });
+      else if (!rotaOk) r.push({ passo: t("pipeline próprio de user.events do app", "the app's own user.events pipeline"), ok: false, detalhe: t("mantido: a rota não foi atualizada", "kept: the route was not updated") });
+      else { const x = await c.chamar("DELETE", `${SETTINGS}/${e.pipelineEventos.objectId}`); r.push({ passo: t("pipeline próprio de user.events do app", "the app's own user.events pipeline"), ok: x.status < 300, detalhe: x.status < 300 ? t("removido", "removed") : resumo(x.dados) }); }
     }
   } else {
     // ---- modo próprio: pipeline e rota do DEF
     const pe = await objeto(t("pipeline de user.events", "user.events pipeline"), SCHEMAS.pipelinesEventos, definirPipelineEventos(), e.pipelineEventos);
     if (o.apps.length === 0) r.push({ passo: t("roteamento de user.events", "user.events routing"), ok: false, detalhe: t("nenhuma aplicação habilitada", "no application enabled") });
     else await rota(t("roteamento de user.events", "user.events routing"), SCHEMAS.rotaEventos, e.rotaEventos, pe ?? e.pipelineEventos?.objectId ?? null, matcherApps(o.apps), "Digital Experience Flow: aplicacoes habilitadas");
-    if (e.rotasCliente.length) r.push({ passo: t("atenção", "attention"), ok: true, detalhe: t(`este tenant também roteia user.events para ${e.rotasCliente.map((x) => `"${x.nome}"`).join(", ")}; a rota do DEF vem antes e tira deles os eventos das aplicações escolhidas`, `this tenant also routes user.events to ${e.rotasCliente.map((x) => `"${x.nome}"`).join(", ")}; the DEF route comes first and takes the selected applications' events away from them`) });
+    if (e.rotasCliente.length) r.push({ passo: t("atenção", "attention"), ok: true, detalhe: t(`este tenant também roteia user.events para ${e.rotasCliente.map((x) => `"${x.nome}"`).join(", ")}; a rota do app vem antes e tira deles os eventos das aplicações escolhidas`, `this tenant also routes user.events to ${e.rotasCliente.map((x) => `"${x.nome}"`).join(", ")}; the app's route comes first and takes the selected applications' events away from them`) });
   }
   // legado (até 1.3.x): métricas de spans. Tira a rota do DEF (os spans voltam ao pipeline padrão) e depois o pipeline.
   const entradasSpans: any[] = e.rotaSpans?.value?.routingEntries ?? [];
   const semDef = entradasSpans.filter((x) => !(x.pipelineId === e.pipelineSpans?.objectId || DO_DEF.test(String(x.description ?? ""))));
   let rotaLimpa = true;
-  if (e.rotaSpans && semDef.length !== entradasSpans.length) rotaLimpa = (await objeto(t("roteamento de spans (tira a rota antiga do DEF)", "spans routing (remove the old DEF route)"), SCHEMAS.rotaSpans, { routingEntries: semDef }, e.rotaSpans)) !== null;
+  if (e.rotaSpans && semDef.length !== entradasSpans.length) rotaLimpa = (await objeto(t("roteamento de spans (tira a rota antiga do app)", "spans routing (remove the app's old route)"), SCHEMAS.rotaSpans, { routingEntries: semDef }, e.rotaSpans)) !== null;
   if (e.pipelineSpans) {
     if (o.validarApenas) r.push({ passo: t("pipeline de spans (antigo)", "spans pipeline (old)"), ok: true, detalhe: t("seria removido", "would be removed") });
     else if (!rotaLimpa) r.push({ passo: t("pipeline de spans (antigo)", "spans pipeline (old)"), ok: false, detalhe: t("mantido: a rota antiga não foi removida", "kept: the old route was not removed") });

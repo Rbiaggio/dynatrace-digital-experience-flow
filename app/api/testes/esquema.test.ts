@@ -73,7 +73,7 @@ test("texto pronto: resumo estrutural no topo e cada oportunidade em Problema x 
   ];
   const md = markdownDaAnalise(ops, s, { motor: { nome: "LLM simulado", provedor: "simulado", modelo: "x", simulado: true }, quando: "2026-10-17T12:00:00Z", periodo: "2 h" });
   assert.ok(md.indexOf("## Resumo estrutural") < md.indexOf("## Oportunidades"));
-  for (const k of ["**Problema:**", "**Causa raiz**", "**Solução:**", "**Benefício:**", "Prova no DEF", "Causas estruturais comuns", "Plano em ondas", "Iniciativas recomendadas"]) assert.ok(md.includes(k), k);
+  for (const k of ["**Problema:**", "**Causa raiz**", "**Solução:**", "**Benefício:**", "Prova no Digital Experience Flow", "Causas estruturais comuns", "Plano em ondas", "Iniciativas recomendadas"]) assert.ok(md.includes(k), k);
   assert.match(md, /Não foi analisada: não respondeu/);
   assert.ok(!/[—–]/.test(md));
   const en = markdownDaAnalise(ops, null, { motor: { nome: "x", provedor: "simulado", modelo: "x", simulado: true }, quando: "2026-10-17T12:00:00Z", periodo: "2 h", idioma: "en" });
