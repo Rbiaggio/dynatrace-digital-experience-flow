@@ -29,4 +29,5 @@ export const FIGURAS: Record<string, FiguraDoc> = {
   "configuracao": f("configuracao.jpg", 1400, 1057, [1600, 1208]),
   "llm-aceite": f("llm-aceite.jpg", 694, 757),
   "llm-progresso": f("llm-progresso.jpg", 1054, 372),
+  "llm-resultado": f("llm-resultado.jpg", 1070, 1338),
 };
