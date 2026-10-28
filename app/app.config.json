@@ -3,7 +3,7 @@
   "environmentUrl": "https://your-environment-id.apps.dynatrace.com/",
   "app": {
     "name": "Digital Experience Flow",
-    "version": "1.47.2",
+    "version": "1.47.3",
     "description": "Frontend journeys, funnels and root causes on RUM on Grail.",
     "icon": "ui/assets/icon.svg",
     "id": "my.digital.experience.flow",

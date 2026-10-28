@@ -37,7 +37,9 @@ aplicações web e mobile, onde encontram erro, onde desistem e quais serviços 
 - O Dynatrace Assist (Davis CoPilot) explica um problema ou uma oportunidade, dentro do Dynatrace.
 - Análise estrutural de causa raiz por um LLM que você configura (com a sua chave), opcional: problema, causa raiz,
   solução e benefício por oportunidade, causas comuns e plano de 30, 60 e 90 dias. Só evidências mascaradas, com o
-  aceite de quem pede.
+  aceite de quem pede. O resultado vai do geral para o detalhe, e o texto longo do modelo fica a um clique.
+
+<p align="center"><img src="app/ui/assets/docs/llm-resultado.jpg" width="720" alt="Resultado da análise por LLM: resumo em números, causas comuns, por onde começar, plano e cada oportunidade (LLM simulado)"></p>
 
 ### Feito para quem opera
 

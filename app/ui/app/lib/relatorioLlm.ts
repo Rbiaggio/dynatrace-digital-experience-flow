@@ -26,18 +26,18 @@ export function podeGerarRelatorio(_perfil?: { email?: string | null; papeis?: s
 }
 
 /* ---- Catálogo de iniciativas (editável, sem preço) -------------------------------------------------------------- */
-export interface OfertaIniciativa { oferta: string; entrega: string; formato: string; duracao: string }
-/** Iniciativa por tipo de problema: nomes, escopo, entregas e duração típica são sugestões para ajustar ao seu contexto (passe `catalogo` em DadosRelatorio para trocar). Sem preço. */
-export const catalogoIniciativasPadrao = (): Record<TipoServico, OfertaIniciativa> => ({
-  "back-resiliencia": { oferta: t("Confiabilidade de jornadas críticas (SRE)", "Critical journey reliability (SRE)"), entrega: t("SLO por jornada, failover e roteamento regional, circuit breaker, nova tentativa idempotente, alertas por estado, teste de carga e de falha", "SLO per journey, failover and regional routing, circuit breaker, idempotent retry, alerts per state, load and failure tests"), formato: t("time de SRE com o time do serviço", "SRE team with the service team"), duracao: t("4 a 8 semanas", "4 to 8 weeks") },
-  "back-api": { oferta: t("Correção de APIs com causa raiz", "API fixes with root cause"), entrega: t("análise pelos traces (serviço onde a falha nasce), correção, testes de contrato e de regressão, painel de erros por endpoint", "trace analysis (service where the failure starts), fix, contract and regression tests, error dashboard per endpoint"), formato: t("time de backend", "backend team"), duracao: t("2 a 6 semanas", "2 to 6 weeks") },
-  "front-desempenho": { oferta: t("Core Web Vitals na meta", "Core Web Vitals on target"), entrega: t("orçamento de desempenho, carga tardia de componentes, cache e timeout de APIs, espaço reservado contra CLS, guia para o time", "performance budget, lazy loading of components, API cache and timeout, reserved space against CLS, team guide"), formato: t("especialistas de frontend com o time do app", "frontend specialists with the app team"), duracao: t("2 a 4 semanas", "2 to 4 weeks") },
-  "front-codigo": { oferta: t("Sprint de estabilidade do frontend", "Frontend stability sprint"), entrega: t("triagem dos erros de JavaScript por impacto, correção, testes de tela automatizados e alerta de regressão", "triage of JavaScript errors by impact, fixes, automated page tests and regression alerts"), formato: t("sprint dedicada", "dedicated sprint"), duracao: t("1 a 2 semanas", "1 to 2 weeks") },
-  mobile: { oferta: t("Desempenho e estabilidade do app", "App performance and stability"), entrega: t("crash e ANR, abertura do app, ações lentas, versão com monitoração e meta no Apdex mobile", "crash and ANR, app start, slow actions, monitored release and a mobile Apdex target"), formato: t("time mobile", "mobile team"), duracao: t("3 a 6 semanas", "3 to 6 weeks") },
-  observabilidade: { oferta: t("Observabilidade Dynatrace (RUM, OpenPipeline, Grail)", "Dynatrace observability (RUM, OpenPipeline, Grail)"), entrega: t("nomes de telas, correlação RUM e backend, métrica de Apdex por tela (web e mobile), custo de DPS sob controle", "screen names, RUM and backend correlation, per-screen Apdex metric (web and mobile), DPS cost under control"), formato: t("especialistas em Dynatrace", "Dynatrace specialists"), duracao: t("1 a 3 semanas", "1 to 3 weeks") },
-  jornada: { oferta: t("Jornadas e conversão", "Journeys and conversion"), entrega: t("jornadas salvas no Digital Experience Flow, funis, mensagens de erro com saída para o cliente, testes A/B", "journeys saved in Digital Experience Flow, funnels, error messages with a way out for the customer, A/B tests"), formato: t("UX e dados com o negócio", "UX and data with the business"), duracao: t("3 a 6 semanas", "3 to 6 weeks") },
+export interface IniciativaSugerida { nome: string; entrega: string }
+/** Iniciativa por tipo de problema: nomes, escopo e entregas são sugestões para ajustar ao seu contexto (passe `catalogo` em DadosRelatorio para trocar). Sem preço. */
+export const catalogoIniciativasPadrao = (): Record<TipoServico, IniciativaSugerida> => ({
+  "back-resiliencia": { nome: t("Confiabilidade de jornadas críticas (SRE)", "Critical journey reliability (SRE)"), entrega: t("SLO por jornada, failover e roteamento regional, circuit breaker, nova tentativa idempotente, alertas por estado, teste de carga e de falha", "SLO per journey, failover and regional routing, circuit breaker, idempotent retry, alerts per state, load and failure tests") },
+  "back-api": { nome: t("Correção de APIs com causa raiz", "API fixes with root cause"), entrega: t("análise pelos traces (serviço onde a falha nasce), correção, testes de contrato e de regressão, painel de erros por endpoint", "trace analysis (service where the failure starts), fix, contract and regression tests, error dashboard per endpoint") },
+  "front-desempenho": { nome: t("Core Web Vitals na meta", "Core Web Vitals on target"), entrega: t("orçamento de desempenho, carga tardia de componentes, cache e timeout de APIs, espaço reservado contra CLS, guia para o time", "performance budget, lazy loading of components, API cache and timeout, reserved space against CLS, team guide") },
+  "front-codigo": { nome: t("Sprint de estabilidade do frontend", "Frontend stability sprint"), entrega: t("triagem dos erros de JavaScript por impacto, correção, testes de tela automatizados e alerta de regressão", "triage of JavaScript errors by impact, fixes, automated page tests and regression alerts") },
+  mobile: { nome: t("Desempenho e estabilidade do app", "App performance and stability"), entrega: t("crash e ANR, abertura do app, ações lentas, versão com monitoração e meta no Apdex mobile", "crash and ANR, app start, slow actions, monitored release and a mobile Apdex target") },
+  observabilidade: { nome: t("Observabilidade Dynatrace (RUM, OpenPipeline, Grail)", "Dynatrace observability (RUM, OpenPipeline, Grail)"), entrega: t("nomes de telas, correlação RUM e backend, métrica de Apdex por tela (web e mobile), custo de DPS sob controle", "screen names, RUM and backend correlation, per-screen Apdex metric (web and mobile), DPS cost under control") },
+  jornada: { nome: t("Jornadas e conversão", "Journeys and conversion"), entrega: t("jornadas salvas no Digital Experience Flow, funis, mensagens de erro com saída para o cliente, testes A/B", "journeys saved in Digital Experience Flow, funnels, error messages with a way out for the customer, A/B tests") },
 });
-const acompanhamento = (): OfertaIniciativa => ({ oferta: t("Acompanhamento mensal da experiência digital", "Monthly digital experience follow-up"), entrega: t("revisão mensal das oportunidades com o negócio, relatório, priorização do backlog e medição do ganho (Apdex, conversão, saídas após erro)", "monthly review of the opportunities with the business, report, backlog prioritization and measurement of the gain (Apdex, conversion, exits after errors)"), formato: t("rotina contínua", "ongoing routine"), duracao: t("contínuo", "ongoing") });
+const acompanhamento = (): IniciativaSugerida => ({ nome: t("Acompanhamento mensal da experiência digital", "Monthly digital experience follow-up"), entrega: t("revisão mensal das oportunidades com o negócio, relatório, priorização do backlog e medição do ganho (Apdex, conversão, saídas após erro)", "monthly review of the opportunities with the business, report, backlog prioritization and measurement of the gain (Apdex, conversion, exits after errors)") });
 
 /* ---- Entrada ---------------------------------------------------------------------------------------------------------- */
 export interface DadosRelatorio {
@@ -60,7 +60,7 @@ export interface DadosRelatorio {
   ajustesExistentes?: ProblemaDado[];
   /** um dossiê de evidências da análise por LLM (lib/dossie.ts), para o início do JSON no anexo A */
   dossie?: unknown | null;
-  catalogo?: Partial<Record<TipoServico, OfertaIniciativa>>;
+  catalogo?: Partial<Record<TipoServico, IniciativaSugerida>>;
 }
 
 /* ---- Desenho ---------------------------------------------------------------------------------------------------------- */
@@ -251,7 +251,7 @@ export function gerarRelatorioPdf(d: DadosRelatorio): Uint8Array {
     for (const [n, tit, foco] of ondas) {
       const os = itens.filter((o) => o.onda === n);
       const linhas = os.flatMap((o) => [{ s: `${itens.indexOf(o) + 1}. ${m(o.titulo)} · ${t("esforço", "effort")} ${letraEsforco(o.esforco)} · ${m(o.quem)}`, b: true }, { s: t(`Como medir o ganho no Digital Experience Flow: ${m(o.medida)}`, `How to measure the gain in Digital Experience Flow: ${m(o.medida)}`), b: false }]);
-      if (n === 3) linhas.push({ s: acompanhamento().oferta, b: true }, { s: `${acompanhamento().entrega.charAt(0).toUpperCase()}${acompanhamento().entrega.slice(1)}.`, b: false });
+      if (n === 3) linhas.push({ s: acompanhamento().nome, b: true }, { s: `${acompanhamento().entrega.charAt(0).toUpperCase()}${acompanhamento().entrega.slice(1)}.`, b: false });
       const partes = linhas.map((l) => ({ ...l, ls: f.partir(l.s, LARG - 10, { tam: l.b ? 9 : 8, estilo: l.b ? "bold" : "normal" }) }));
       const h = 12 + partes.reduce((s, p) => s + p.ls.length * f.lh(p.b ? 9 : 8) + (p.b ? 0.4 : 1.6), 0) + (os.length || n === 3 ? 0 : 5);
       f.quebra(h);
@@ -271,37 +271,37 @@ export function gerarRelatorioPdf(d: DadosRelatorio): Uint8Array {
   f.nova();
   f.titulo(t("Iniciativas recomendadas", "Recommended initiatives"));
   {
-    const nota = t("Catálogo editável de iniciativas: escopo, entregas e duração típica são sugestões; ajuste ao seu contexto.", "Editable catalog of initiatives: scope, deliverables and typical duration are suggestions; adjust them to your context.");
+    const nota = t("Catálogo editável de iniciativas: escopo e entregas são sugestões; ajuste ao seu contexto.", "Editable catalog of initiatives: scope and deliverables are suggestions; adjust them to your context.");
     const ls = f.partir(nota, LARG - 8, { tam: 8.5 }), h = ls.length * f.lh(8.5) + 5;
     f.caixa(M, f.y, LARG, h, COR.caixa, null);
     ls.forEach((l, j) => { f.fonte({ tam: 8.5, cor: COR.sub }); f.pdf.text(l, M + 4, f.y + 4.5 + j * f.lh(8.5)); });
     f.y += h + 4;
   }
   const cat = { ...catalogoIniciativasPadrao(), ...(d.catalogo ?? {}) };
-  // em caixa: as ofertas dos tipos que aparecem (e observabilidade, se houver ajuste); as outras numa linha no fim
+  // em caixa: as sugeridas dos tipos que aparecem (e observabilidade, se houver ajuste); as outras numa linha no fim
   const tipos = [...new Set([...itens.map((o) => o.tipo), ...(ajustes.length ? ["observabilidade" as TipoServico] : [])])];
   const outras = (Object.keys(cat) as TipoServico[]).filter((k) => !tipos.includes(k));
-  const ofertas: { tipo: string; of: OfertaIniciativa; cobre: string }[] = tipos.map((k) => {
+  const sugeridas: { tipo: string; of: IniciativaSugerida; cobre: string }[] = tipos.map((k) => {
     const cobre = itens.filter((o) => o.tipo === k);
     return { tipo: textoTipo(k), of: cat[k], cobre: cobre.length ? t(`cobre neste relatório: ${cobre.map((o) => `${itens.indexOf(o) + 1}) ${m(o.titulo)}`).join("; ")}`, `covers in this report: ${cobre.map((o) => `${itens.indexOf(o) + 1}) ${m(o.titulo)}`).join("; ")}`) : k === "observabilidade" && ajustes.length ? t("cobre os ajustes de \"Para medir melhor\"", "covers the \"To measure better\" fixes") : t("não aparece neste período", "does not show in this timeframe") };
   });
-  ofertas.push({ tipo: t("Transversal", "Cross-cutting"), of: acompanhamento(), cobre: "" });
-  for (const o of ofertas) {
+  sugeridas.push({ tipo: t("Transversal", "Cross-cutting"), of: acompanhamento(), cobre: "" });
+  for (const o of sugeridas) {
     const corpo = f.partir(`${o.of.entrega.charAt(0).toUpperCase()}${o.of.entrega.slice(1)}.`, LARG - 8, { tam: 8.8 });
-    const pe = f.partir(t(`Formato: ${o.of.formato} · duração típica: ${o.of.duracao}${o.cobre ? ` · ${o.cobre}` : ""}`, `Format: ${o.of.formato} · typical duration: ${o.of.duracao}${o.cobre ? ` · ${o.cobre}` : ""}`), LARG - 8, { tam: 8 });
+    const pe = o.cobre ? f.partir(o.cobre.charAt(0).toUpperCase() + o.cobre.slice(1), LARG - 8, { tam: 8 }) : [];
     const h = 13 + corpo.length * f.lh(8.8) + pe.length * f.lh(8) + 2;
     f.quebra(h);
     const y0 = f.y;
     f.caixa(M, y0, LARG, h, null);
     f.fonte({ tam: 7.5, cor: COR.sub }); f.pdf.text(latin1(o.tipo.toUpperCase()), M + 4, y0 + 4.8);
-    f.fonte({ tam: 10.5, estilo: "bold" }); f.pdf.text(latin1(o.of.oferta), M + 4, y0 + 9.6);
+    f.fonte({ tam: 10.5, estilo: "bold" }); f.pdf.text(latin1(o.of.nome), M + 4, y0 + 9.6);
     let yy = y0 + 14;
     for (const l of corpo) { f.fonte({ tam: 8.8 }); f.pdf.text(l, M + 4, yy); yy += f.lh(8.8); }
     for (const l of pe) { f.fonte({ tam: 8, cor: COR.sub }); f.pdf.text(l, M + 4, yy); yy += f.lh(8); }
     f.y = y0 + h + 3;
   }
-  if (outras.length) f.bloco(t(`Também no catálogo, sem achado neste período: ${outras.map((k) => `${cat[k].oferta} (${textoTipo(k).toLowerCase()})`).join("; ")}.`,
-                               `Also in the catalog, with no finding in this timeframe: ${outras.map((k) => `${cat[k].oferta} (${textoTipo(k).toLowerCase()})`).join("; ")}.`), { tam: 8.5, cor: COR.sub });
+  if (outras.length) f.bloco(t(`Também no catálogo, sem achado neste período: ${outras.map((k) => `${cat[k].nome} (${textoTipo(k).toLowerCase()})`).join("; ")}.`,
+                               `Also in the catalog, with no finding in this timeframe: ${outras.map((k) => `${cat[k].nome} (${textoTipo(k).toLowerCase()})`).join("; ")}.`), { tam: 8.5, cor: COR.sub });
 
   // anexo A: dossiês
   f.nova();

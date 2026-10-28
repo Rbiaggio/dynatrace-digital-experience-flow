@@ -8,6 +8,27 @@ a PDF download.
 
 It is **off by default**: without configuration the button does not show for anyone.
 
+## What the result looks like
+
+![LLM analysis result (simulated LLM)](../app/ui/assets/docs/llm-resultado.jpg)
+
+The window reads from the overview to the detail:
+
+- **Summary in numbers:** recoverable sessions per month (the sum of the opportunities with a measure), how many common
+  causes explain the opportunities, and where to start (the first quick fix in the order). Below, the first sentence of
+  the model's summary; the rest opens with "Read the whole summary".
+- **Common causes:** one card each, with the opportunities it explains, the confidence, the impact in sessions per month
+  and what to do. The evidence opens on demand.
+- **Where to start:** the order of attack as a table, with benefit, effort and the main reason.
+- **Plan:** 30, 60 and 90 days, two actions per wave; the other actions and how to prove the gain are one click away.
+- **Each opportunity:** collapsed with its effort; open (the first in the order comes open), four short fields: problem,
+  root cause with the confidence, quick fix and benefit. "See the full detail" has the numbers, every solution, the
+  benefit math, the evidence chain, the hypotheses ruled out and how to prove it in the app.
+- **Recommended initiatives:** tags for the kinds of work that fit (the catalog is editable and has no prices).
+
+The header holds "Download PDF", "What was sent" (the dossiers exactly as they left, as JSON) and "New analysis"; a
+line below says when it ran, what it read (queries, MB and cost) and which model answered. The PDF has the same parts.
+
 ## What is read and sent
 
 Read in the environment with the identity of the person who asked, on request, with a read budget:
