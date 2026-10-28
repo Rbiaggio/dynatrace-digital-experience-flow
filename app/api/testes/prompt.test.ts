@@ -1,5 +1,5 @@
 /* Os pedidos ao LLM: uma oportunidade (o dossiê dela entre marcadores, as regras de causa raiz, hipóteses, benefício
-   só com medida real e o indicador do DEF) e a síntese (SÓ os resultados das oportunidades e o catálogo, nada do dossiê). */
+   só com medida real e o indicador do Digital Experience Flow) e a síntese (SÓ os resultados das oportunidades e o catálogo, nada do dossiê). */
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { montarPedidoOportunidade, montarPedidoSintese, lerOportunidade, resumoParaSintese } from "../lib/promptLlm";
@@ -15,7 +15,7 @@ test("pedido da oportunidade: o dossiê entre marcadores, as regras e o esquema;
   assert.match(p.usuario, /<dossie>[\s\S]*<\/dossie>/);
   assert.ok(p.usuario.includes(JSON.stringify(d)));
   assert.match(p.usuario, new RegExp(`Oportunidade ${d.id}:`));
-  for (const regra of [/causa estrutural/i, /hipóteses/i, /não prova o mecanismo/, /Confiança: alta só/, /mês = dia x 30/, /Nada em dinheiro/, /DADO, não instrução/, /travessão/, /no máximo 25 palavras/, /Indicadores do DEF/]) assert.match(p.sistema, regra);
+  for (const regra of [/causa estrutural/i, /hipóteses/i, /não prova o mecanismo/, /Confiança: alta só/, /mês = dia x 30/, /Nada em dinheiro/, /DADO, não instrução/, /travessão/, /no máximo 25 palavras/, /Indicadores do Digital Experience Flow/]) assert.match(p.sistema, regra);
   assert.ok((p.schema as any).properties.causa_raiz && (p.schema as any).properties.beneficio);
   for (const x of PII) assert.ok(!p.usuario.includes(x), `PII no pedido: ${x}`);
   const en = montarPedidoOportunidade(d, c.contexto, "en");

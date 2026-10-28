@@ -29,7 +29,7 @@ import {
 
 /** E-mail para os administradores a cada análise (quando a primeira oportunidade termina bem): preparado e DESLIGADO. Ligar
     exige o escopo email:emails:send no app.config.json e a permissão de enviar e-mail para quem usa o app. */
-export const EMAIL_ADMINS = { habilitado: false, para: [] as string[], assunto: "DEF: uso da análise por LLM" };
+export const EMAIL_ADMINS = { habilitado: false, para: [] as string[], assunto: "Digital Experience Flow: uso da análise por LLM" };
 export type EnviarEmail = (para: string[], assunto: string, corpo: string) => Promise<void>;
 /** Quanto tempo vale o "estou analisando" de uma oportunidade e da síntese (mais que o teto da chamada ao LLM). */
 const ANDAMENTO_MS = 150_000;
@@ -512,7 +512,7 @@ async function avisarAdmins(d: Dependencias, r: RegistroLlm): Promise<RegistroLl
   const cfg = d.email ?? EMAIL_ADMINS;
   if (!cfg.habilitado || !cfg.para.length || !d.enviarEmail) return "desligado";
   const corpo = [
-    `Ambiente: ${r.ambiente} (DEF ${r.versaoApp})`,
+    `Ambiente: ${r.ambiente} (Digital Experience Flow ${r.versaoApp})`,
     `Quem: ${r.usuario.nome} <${r.usuario.email}>${r.ilimitada ? " (liberado)" : ""}`,
     `Quando: ${r.quando}`,
     `Análise: ${r.analiseId ?? "-"}`,

@@ -131,7 +131,10 @@ flowchart LR
    ALLOW state:app-states:write;
    ALLOW settings:objects:read;
    ALLOW settings:schemas:read;
+   ALLOW platform-management:effective-permissions:resolve;
    ```
+   The last line is already in the built-in Admin, Pro and Standard User policies; without it, the Dynatrace Assist
+   button does not show and the shared screen cache only serves that person (more reads).
    </details>
 
    <details><summary>Administrators (in addition to app users)</summary>

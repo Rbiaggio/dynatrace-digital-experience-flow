@@ -25,10 +25,21 @@ export const TAREFAS_WORKFLOW: TarefaWorkflow[] = [
     descricao: "Digital Experience Flow: analisa cada hora uma vez (caminhos, onde as sessoes terminam, paginas, funis, qualidade do dado, chamadas por endpoint, as 3 requisicoes mais lentas de cada pagina, valores dos filtros e a ligacao pagina -> servico) e grava no bucket rum_flow_horas; a tela soma as ultimas 24 horas. Confere as ultimas 23 horas a cada 15 minutos e refaz o que falta. Workflow simples: sem custo por hora.",
     tarefaDescricao: "Analisa as horas que faltam e grava no bucket de horas (rum_flow_horas)" },
 ];
-/** O workflow único (1.44.5). */
-export const WORKFLOW_UNICO = { tarefa: "ciclo", minutos: 5, titulo: "DEF | Agregados, sessoes e horas a cada 5 min",
-  descricao: "Digital Experience Flow: a cada 5 minutos grava os totais da ultima fatia da copia das sessoes (setas, entradas, erros, views, cliques, tempo de carga e Apdex) nos buckets rum_flow_agregados e rum_flow_erros; a cada 15 minutos, as sessoes da ultima hora no App State do app (so com a Visao geral aberta nos ultimos 20 minutos) e a analise de hora em hora no bucket rum_flow_horas. Um workflow simples: sem custo por hora; uma execucao de funcao a cada 5 minutos.",
-  tarefaDescricao: "Fatia de 5 min; a cada 15 min, sessoes da ultima hora ou analise de hora em hora" } as const;
+/** O workflow único (1.44.5). 1.47.7: o título leva o nome do app (era "DEF | ..."), e título e descrição saem na língua
+    de quem cria o workflow (globalThis.__DEF_IDIOMA, lib/i18n.ts; sem import de valor); os títulos anteriores e o da
+    outra língua continuam reconhecidos (TITULOS_ANTERIORES). */
+const emIngles = () => (globalThis as { __DEF_IDIOMA?: string }).__DEF_IDIOMA === "en";
+export const TITULOS_CICLO = { pt: "Digital Experience Flow | Agregados, sessoes e horas a cada 5 min", en: "Digital Experience Flow | Aggregates, sessions and hours every 5 min" } as const;
+export const WORKFLOW_UNICO = {
+  tarefa: "ciclo", minutos: 5,
+  get titulo() { return emIngles() ? TITULOS_CICLO.en : TITULOS_CICLO.pt; },
+  get descricao() {
+    return emIngles()
+      ? "Digital Experience Flow: every 5 minutes writes the totals of the last slice of the session copy (arrows, entries, errors, views, clicks, load time and Apdex) to the rum_flow_agregados and rum_flow_erros buckets; every 15 minutes, the sessions of the last hour to the app's App State (only with the Overview open in the last 20 minutes) and the hourly analysis to the rum_flow_horas bucket. A simple workflow: no hourly cost; one function run every 5 minutes."
+      : "Digital Experience Flow: a cada 5 minutos grava os totais da ultima fatia da copia das sessoes (setas, entradas, erros, views, cliques, tempo de carga e Apdex) nos buckets rum_flow_agregados e rum_flow_erros; a cada 15 minutos, as sessoes da ultima hora no App State do app (so com a Visao geral aberta nos ultimos 20 minutos) e a analise de hora em hora no bucket rum_flow_horas. Um workflow simples: sem custo por hora; uma execucao de funcao a cada 5 minutos.";
+  },
+  get tarefaDescricao() { return emIngles() ? "5-min slice; every 15 min, the sessions of the last hour or the hourly analysis" : "Fatia de 5 min; a cada 15 min, sessoes da ultima hora ou analise de hora em hora"; },
+};
 /** A parte extra de cada execução do ciclo, pelo bloco de 5 min do horário: um de cada três faz as sessões da última hora,
     outro a análise de hora em hora, o terceiro só as fatias (cada execução fica com no máximo duas partes, dentro de 1 min). */
 export function parteDaRodada(t: number): "sessoes" | "hora" | null {
@@ -37,7 +48,7 @@ export function parteDaRodada(t: number): "sessoes" | "hora" | null {
 }
 /** Títulos anteriores: o script de criação acha e atualiza pelo título antigo também (o workflow das fatias vira o único,
     com o mesmo id e o histórico). */
-export const TITULOS_ANTERIORES: Record<string, string[]> = { ciclo: ["DEF | Agregados por fatia de 5 min"] };
+export const TITULOS_ANTERIORES: Record<string, string[]> = { ciclo: [TITULOS_CICLO.pt, TITULOS_CICLO.en, "DEF | Agregados, sessoes e horas a cada 5 min", "DEF | Agregados por fatia de 5 min"] };
 /** Workflows que deixaram de existir (o script de criação apaga os deste app): a ligação de hora em hora (1.41) e, desde
     a 1.44.5, os das sessões da última hora e da análise de hora em hora (viraram partes do workflow único). */
 export const TAREFAS_REMOVIDAS: { tarefa: string; titulo: string }[] = [{ tarefa: "ligacao", titulo: "DEF | Ligacao pagina-servico de hora em hora" },
@@ -61,10 +72,15 @@ type Chamador = { chamar(metodo: string, url: string, corpo?: unknown, params?: 
 export async function acharWorkflow(c: Chamador, app: string): Promise<WorkflowAchado | null | "sem-permissao"> {
   const API = "/platform/automation/v1/workflows";
   const titulos = [WORKFLOW_UNICO.titulo, ...(TITULOS_ANTERIORES.ciclo ?? [])].flatMap((x) => [x, `${x} (Preview)`]);
-  const l = await c.chamar("GET", API, undefined, { search: "DEF |", limit: "100" });
-  if (l.status === 401 || l.status === 403) return "sem-permissao";
-  if (l.status !== 200) throw new Error(`workflows: HTTP ${l.status}`);
-  for (const w of ((l.dados?.results ?? []) as { id: string; title: string }[]).filter((x) => titulos.includes(x.title))) {
+  // os de hoje ("Digital Experience Flow | ...") e os de antes da 1.47.7 ("DEF | ...")
+  const achados = new Map<string, { id: string; title: string }>();
+  for (const busca of ["Digital Experience Flow |", "DEF |"]) {
+    const l = await c.chamar("GET", API, undefined, { search: busca, limit: "100" });
+    if (l.status === 401 || l.status === 403) return "sem-permissao";
+    if (l.status !== 200) throw new Error(`workflows: HTTP ${l.status}`);
+    for (const w of (l.dados?.results ?? []) as { id: string; title: string }[]) achados.set(w.id, w);
+  }
+  for (const w of [...achados.values()].filter((x) => titulos.includes(x.title))) {
     const d = await c.chamar("GET", `${API}/${w.id}`);
     const tarefas = Object.values((d.dados?.tasks ?? {}) as Record<string, { action?: string }>);
     const criado = Date.parse(String(d.dados?.modificationInfo?.createdTime ?? ""));

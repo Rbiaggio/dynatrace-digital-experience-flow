@@ -50,7 +50,8 @@ export const DocPreRequisitos: React.FC = () => (
           "ALLOW storage:buckets:read;", "ALLOW storage:bizevents:read;", "ALLOW storage:user.events:read;", "ALLOW storage:spans:read;",
           "ALLOW storage:metrics:read;", "ALLOW storage:entities:read;", "ALLOW storage:events:read;",
           "ALLOW state:app-states:read;", "ALLOW state:app-states:write;", "ALLOW settings:objects:read;", "ALLOW settings:schemas:read;",
-        ]} />
+          "ALLOW platform-management:effective-permissions:resolve;",
+        ]} extra={t("A última linha já vem nas políticas padrão Admin, Pro e Standard User; sem ela, o botão do Dynatrace Assist não aparece e o cache compartilhado da tela vale só para a própria pessoa (mais leituras).", "The last line is already in the built-in Admin, Pro and Standard User policies; without it, the Dynatrace Assist button does not show and the shared screen cache only serves that person (more reads).")} />
         <Politica icone={<RepairIcon size={I} />} perfil={t("Quem configura", "Administrators")} descricao={t("Além da de quem usa.", "Besides the app users one.")} linhas={[
           "ALLOW settings:objects:write;", "ALLOW openpipeline:configurations:read;", "ALLOW openpipeline:configurations:write;",
           "ALLOW storage:bucket-definitions:read;", "ALLOW storage:bucket-definitions:write;", "ALLOW storage:system:read;", "ALLOW automation:workflows:read;",

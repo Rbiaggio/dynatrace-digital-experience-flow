@@ -9,6 +9,7 @@
    O PDF sai do gerador próprio de lib/assistPdf.ts (só texto, fontes padrão Latin-1, leve e pesquisável): a mesma classe,
    desenhada aqui com tabelas, caixas e a matriz. Todo texto livre passa por mascarar() (lib/assist.ts). */
 import { PdfSimples, latin1 } from "./assistPdf";
+import { formatarDinheiro } from "./precos";
 import { mascarar } from "./assist";
 import { catalogoRegras, textoTipo, textoEsforco, letraEsforco, nomeCurtoApp, PESOS, PESO_ESFORCO, type Oportunidade, type ResultadoOportunidades, type TipoServico, type IdRegra } from "./oportunidades";
 import type { ProblemaDado } from "./qualidade";
@@ -29,15 +30,15 @@ export function podeGerarRelatorio(_perfil?: { email?: string | null; papeis?: s
 export interface IniciativaSugerida { nome: string; entrega: string }
 /** Iniciativa por tipo de problema: nomes, escopo e entregas são sugestões para ajustar ao seu contexto (passe `catalogo` em DadosRelatorio para trocar). Sem preço. */
 export const catalogoIniciativasPadrao = (): Record<TipoServico, IniciativaSugerida> => ({
-  "back-resiliencia": { nome: t("Confiabilidade de jornadas críticas (SRE)", "Critical journey reliability (SRE)"), entrega: t("SLO por jornada, failover e roteamento regional, circuit breaker, nova tentativa idempotente, alertas por estado, teste de carga e de falha", "SLO per journey, failover and regional routing, circuit breaker, idempotent retry, alerts per state, load and failure tests") },
-  "back-api": { nome: t("Correção de APIs com causa raiz", "API fixes with root cause"), entrega: t("análise pelos traces (serviço onde a falha nasce), correção, testes de contrato e de regressão, painel de erros por endpoint", "trace analysis (service where the failure starts), fix, contract and regression tests, error dashboard per endpoint") },
-  "front-desempenho": { nome: t("Core Web Vitals na meta", "Core Web Vitals on target"), entrega: t("orçamento de desempenho, carga tardia de componentes, cache e timeout de APIs, espaço reservado contra CLS, guia para o time", "performance budget, lazy loading of components, API cache and timeout, reserved space against CLS, team guide") },
-  "front-codigo": { nome: t("Sprint de estabilidade do frontend", "Frontend stability sprint"), entrega: t("triagem dos erros de JavaScript por impacto, correção, testes de tela automatizados e alerta de regressão", "triage of JavaScript errors by impact, fixes, automated page tests and regression alerts") },
-  mobile: { nome: t("Desempenho e estabilidade do app", "App performance and stability"), entrega: t("crash e ANR, abertura do app, ações lentas, versão com monitoração e meta no Apdex mobile", "crash and ANR, app start, slow actions, monitored release and a mobile Apdex target") },
-  observabilidade: { nome: t("Observabilidade Dynatrace (RUM, OpenPipeline, Grail)", "Dynatrace observability (RUM, OpenPipeline, Grail)"), entrega: t("nomes de telas, correlação RUM e backend, métrica de Apdex por tela (web e mobile), custo de DPS sob controle", "screen names, RUM and backend correlation, per-screen Apdex metric (web and mobile), DPS cost under control") },
-  jornada: { nome: t("Jornadas e conversão", "Journeys and conversion"), entrega: t("jornadas salvas no Digital Experience Flow, funis, mensagens de erro com saída para o cliente, testes A/B", "journeys saved in Digital Experience Flow, funnels, error messages with a way out for the customer, A/B tests") },
+  "back-resiliencia": { nome: t("Tornar as jornadas críticas resilientes", "Make critical journeys resilient"), entrega: t("SLO por jornada, failover e roteamento regional, circuit breaker, nova tentativa idempotente, alertas por estado, teste de carga e de falha", "SLO per journey, failover and regional routing, circuit breaker, idempotent retry, alerts per state, load and failure tests") },
+  "back-api": { nome: t("Corrigir as APIs pela causa raiz", "Fix the APIs at the root cause"), entrega: t("análise pelos traces (serviço onde a falha nasce), correção, testes de contrato e de regressão, painel de erros por endpoint", "trace analysis (service where the failure starts), fix, contract and regression tests, error dashboard per endpoint") },
+  "front-desempenho": { nome: t("Levar os Core Web Vitals à meta", "Bring Core Web Vitals to target"), entrega: t("orçamento de desempenho, carga tardia de componentes, cache e timeout de APIs, espaço reservado contra CLS, guia para o time", "performance budget, lazy loading of components, API cache and timeout, reserved space against CLS, team guide") },
+  "front-codigo": { nome: t("Estabilizar o código do frontend", "Stabilize the frontend code"), entrega: t("triagem dos erros de JavaScript por impacto, correção, testes de tela automatizados e alerta de regressão", "triage of JavaScript errors by impact, fixes, automated page tests and regression alerts") },
+  mobile: { nome: t("Melhorar o desempenho e a estabilidade do app", "Improve app performance and stability"), entrega: t("crash e ANR, abertura do app, ações lentas, versão com monitoração e meta no Apdex mobile", "crash and ANR, app start, slow actions, monitored release and a mobile Apdex target") },
+  observabilidade: { nome: t("Completar a observabilidade (RUM, OpenPipeline, Grail)", "Complete the observability (RUM, OpenPipeline, Grail)"), entrega: t("nomes de telas, correlação RUM e backend, métrica de Apdex por tela (web e mobile), custo de DPS sob controle", "screen names, RUM and backend correlation, per-screen Apdex metric (web and mobile), DPS cost under control") },
+  jornada: { nome: t("Medir e melhorar as jornadas e a conversão", "Measure and improve journeys and conversion"), entrega: t("jornadas salvas no Digital Experience Flow, funis, mensagens de erro com saída para o cliente, testes A/B", "journeys saved in Digital Experience Flow, funnels, error messages with a way out for the customer, A/B tests") },
 });
-const acompanhamento = (): IniciativaSugerida => ({ nome: t("Acompanhamento mensal da experiência digital", "Monthly digital experience follow-up"), entrega: t("revisão mensal das oportunidades com o negócio, relatório, priorização do backlog e medição do ganho (Apdex, conversão, saídas após erro)", "monthly review of the opportunities with the business, report, backlog prioritization and measurement of the gain (Apdex, conversion, exits after errors)") });
+const acompanhamento = (): IniciativaSugerida => ({ nome: t("Rever a experiência digital todo mês", "Review the digital experience every month"), entrega: t("revisão mensal das oportunidades com o negócio, relatório, priorização do backlog e medição do ganho (Apdex, conversão, saídas após erro)", "monthly review of the opportunities with the business, report, backlog prioritization and measurement of the gain (Apdex, conversion, exits after errors)") });
 
 /* ---- Entrada ---------------------------------------------------------------------------------------------------------- */
 export interface DadosRelatorio {
@@ -397,6 +398,8 @@ export interface DadosAnalisePdf {
   periodo: string;
   geradoEm: number;
   geradoPor?: string | null;
+  /** 1.47.7: o preço de consulta em uso, na moeda da tela (o custo da leitura sai dos bytes lidos) */
+  precoConsulta?: number;
 }
 const CONF_TXT = (c: Confianca) => ({ alta: t("alta", "high"), media: t("média", "medium"), baixa: t("baixa", "low") })[c];
 const CONF_COR = (c: Confianca): Cor => (c === "alta" ? [27, 120, 60] : c === "media" ? COR.aviso : COR.erro);
@@ -419,7 +422,7 @@ export function gerarAnaliseLlmPdf(d: DadosAnalisePdf): Uint8Array {
   f.preencher(COR.marca); f.pdf.rect(M, yT + 1, 1.4, f.y - yT - 4, "F");
   const col = r.contexto?.coleta;
   const mb = (b: number) => (b / 1024 ** 2).toLocaleString(loc(), { maximumFractionDigits: 1 });
-  const reais = (v: number) => (v < 0.0001 ? t("menos de R$ 0,0001", "less than R$ 0.0001") : `R$ ${dec(v, v < 0.01 ? 4 : 2)}`);
+  const reais = (v: number) => formatarDinheiro(d.precoConsulta != null && col ? (col.bytes / 1024 ** 3) * d.precoConsulta : v);
   const linhas = [
     `${m(d.escopo)} · ${t("dados de", "data from")} ${m(d.periodo)}`,
     t(`${ops.length === 1 ? "1 oportunidade analisada" : `${ops.length} oportunidades analisadas`} (${r.estado.prontas === 1 ? "1 pronta" : `${r.estado.prontas} prontas`}${r.estado.falhas ? `, ${r.estado.falhas} com falha` : ""}) · ${m(r.motor.nome)}, modelo ${m(r.motor.modelo)}`,

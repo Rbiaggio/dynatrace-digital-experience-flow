@@ -1,11 +1,22 @@
 /* Respostas SIMULADAS do LLM para a prévia e o exemplo (servidor local): escritas à mão no formato dos esquemas, só para
    mostrar o resultado na tela e no PDF sem gastar o LLM. Não são uma análise de verdade: a oportunidade repete o mesmo
-   texto com o título de cada uma. */
+   texto com o título de cada uma; os números (1.47.7) mudam por oportunidade e fecham a conta (mês = dia x 30, e a causa
+   comum soma as oportunidades que ela explica). */
 const tituloDe = (corpo: Record<string, any>) => /Oportunidade o\d+: (.*)/.exec(String(corpo.messages?.[0]?.content ?? ""))?.[1]?.trim() ?? "oportunidade";
 const idDe = (corpo: Record<string, any>) => /Oportunidade (o\d+):/.exec(String(corpo.messages?.[0]?.content ?? ""))?.[1] ?? "o1";
+/** Números por oportunidade: sessões com erro por dia, a fração recuperável, a conversão de hoje e a esperada, o esforço. */
+const NUMEROS: Record<string, { dia: number; pct: number; conv: [number, number]; esforco: "P" | "M" | "G"; base: [number, number] }> = {
+  o1: { dia: 1200, pct: 90, conv: [62, 92], esforco: "M", base: [100, 10] },
+  o2: { dia: 520, pct: 85, conv: [70, 90], esforco: "P", base: [43, 5] },
+  o3: { dia: 900, pct: 20, conv: [80, 84], esforco: "G", base: [75, 60] },
+  o4: { dia: 300, pct: 80, conv: [75, 85], esforco: "P", base: [25, 5] },
+};
+const numerosDe = (id: string) => NUMEROS[id] ?? { dia: 200, pct: 50, conv: [70, 80] as [number, number], esforco: "M" as const, base: [17, 8] as [number, number] };
+const recuperadasDia = (id: string) => Math.round((numerosDe(id).dia * numerosDe(id).pct) / 100);
+const fmt = (n: number) => n.toLocaleString("pt-BR");
 
-export const opExemplo = (corpo: Record<string, any>) => ({
-  problema: { resumo: `Exemplo simulado para "${tituloDe(corpo)}": a chamada falha para parte dos clientes e eles não concluem a etapa.`, numeros_chave: ["150 clientes com erro em 2 h (negocio.paginas)", "62% de falha no RJ contra 9% em SP (por_estado)"] },
+export const opExemplo = (corpo: Record<string, any>) => { const id = idDe(corpo), n = numerosDe(id), rd = recuperadasDia(id); return {
+  problema: { resumo: `Exemplo simulado para "${tituloDe(corpo)}": a chamada falha para parte dos clientes e eles não concluem a etapa.`, numeros_chave: [`${fmt(n.dia)} sessões com erro por dia (negocio.paginas)`, `${n.base[0]} não concluíram em 2 h (negocio.paginas)`] },
   causa_raiz: {
     afirmacao: "O serviço de origem rejeita a requisição em menos de 1 ms, antes de chamar o banco, e os canais só repassam o erro.",
     causa_estrutural: "Falha decidida dentro do serviço sem failover, sem contrato de erro e sem alerta na origem.",
@@ -23,15 +34,15 @@ export const opExemplo = (corpo: Record<string, any>) => ({
     correcao_rapida: [{ acao: "Desligar a condição que devolve indisponível sem tentar o processamento", onde: "serviço de origem", prazo: "1 a 3 dias" }],
     mudanca_estrutural: [{ acao: "Contrato de erro e nova tentativa idempotente no canal", camada: "resiliencia", detalhe: "O cliente para de ver 500 genérico e a falha transitória some" }, { acao: "Alerta e SLO na origem, por estado", camada: "observabilidade", detalhe: "A falha aparece onde nasce, não no proxy" }],
   },
-  beneficio: { sessoes_afetadas_por_dia: 1200, sessoes_recuperadas_por_dia: 1080, sessoes_recuperadas_por_mes: 32400, conversao_atual_pct: 0, conversao_esperada_pct: 100, conta: "136 não concluíram em 2 h x 12 = 1.632 por dia; 90% recuperáveis x 30", premissas: ["mês = dia x 30", "a taxa sem erro vale para quem hoje tem erro"], o_que_nao_da_para_medir: "Valor das transações e clientes únicos" },
-  esforco: { nivel: "M", justificativa: "Dois times: o do serviço de origem e o do canal." },
-  validacao: { indicador_def: "Não concluíram na etapa da página", linha_de_base: "136 em 2 h", meta: "menos de 10 em 2 h", como_medir: "Visão geral, 7 dias, mesma janela" },
+  beneficio: { sessoes_afetadas_por_dia: n.dia, sessoes_recuperadas_por_dia: rd, sessoes_recuperadas_por_mes: rd * 30, conversao_atual_pct: n.conv[0], conversao_esperada_pct: n.conv[1], conta: `${fmt(n.dia)} sessões com erro por dia; ${n.pct}% recuperáveis = ${fmt(rd)} por dia; x 30 = ${fmt(rd * 30)} por mês`, premissas: ["mês = dia x 30", "a taxa sem erro vale para quem hoje tem erro"], o_que_nao_da_para_medir: "Valor das transações e clientes únicos" },
+  esforco: { nivel: n.esforco, justificativa: n.esforco === "P" ? "Um time, mudança no próprio serviço." : n.esforco === "M" ? "Dois times: o do serviço de origem e o do canal." : "Mudança de desenho da página e do serviço, com mais de um time." },
+  validacao: { indicador_def: "Não concluíram na etapa da página", linha_de_base: `${n.base[0]} em 2 h`, meta: `menos de ${n.base[1]} em 2 h`, como_medir: "Visão geral, 7 dias, mesma janela" },
   riscos: ["Nova tentativa sem idempotência pode duplicar a transação"],
-});
+}; };
 export const SINTESE_EXEMPLO = {
   resumo_executivo: "Exemplo simulado: as falhas de backend decididas dentro dos serviços tiram mais clientes do fluxo que a lentidão. Duas causas estruturais aparecem: falha sem contrato de erro e sem failover, e telas acopladas a chamadas lentas. Primeiro, desligar as condições de indisponibilidade e colocar alerta na origem.",
   causas_estruturais_comuns: [
-    { causa: "Falha decidida no serviço sem failover nem contrato de erro", oportunidades: ["o1", "o2"], evidencias_que_ligam: ["origem no serviço em menos de 1 ms", "nenhuma chamada ao banco na falha"], o_que_separa: "serviços e times diferentes", mudanca_estrutural: "Contrato de erro e failover padrão para as APIs de canal", beneficio_sessoes_mes: 40000, confianca: "alta" },
+    { causa: "Falha decidida no serviço sem failover nem contrato de erro", oportunidades: ["o1", "o2"], evidencias_que_ligam: ["origem no serviço em menos de 1 ms", "nenhuma chamada ao banco na falha"], o_que_separa: "serviços e times diferentes", mudanca_estrutural: "Contrato de erro e failover padrão para as APIs de canal", beneficio_sessoes_mes: (recuperadasDia("o1") + recuperadasDia("o2")) * 30, confianca: "alta" },
     { causa: "Tela desenhada só depois de uma chamada lenta", oportunidades: ["o3"], evidencias_que_ligam: ["LCP termina logo depois da chamada"], o_que_separa: "não é falha, é tempo", mudanca_estrutural: "Esqueleto da página e carga tardia", beneficio_sessoes_mes: null, confianca: "media" },
   ],
   priorizacao: [{ id: "o1", ordem: 1, razao: "Maior benefício medido com esforço médio" }, { id: "o2", ordem: 2, razao: "Mesma causa da oportunidade 1" }, { id: "o3", ordem: 3, razao: "Sem perda de conversão medida" }],

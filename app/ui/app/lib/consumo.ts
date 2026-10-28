@@ -12,18 +12,23 @@
 import { stateClient } from "@dynatrace-sdk/client-state";
 import { BUCKETS_PASSOS, BUCKET_AGREGADOS, BUCKET_ERROS, BUCKET_HORAS } from "./prerequisitos";
 
-import { CAMBIO_PADRAO, PRECO_LISTA_USD, precoDeLista, type ParteConsumo } from "./precos";
+import { CAMBIO_PADRAO, PRECO_LISTA_USD, precoDeLista, converterMoeda, moedaDaTela, type Moeda, type ParteConsumo } from "./precos";
 export { CAMBIO_PADRAO, PRECO_LISTA_USD, precoDeLista, type ParteConsumo };
 export const PARTES_CONSUMO: ParteConsumo[] = ["consulta", "gravacao", "retencao", "funcao"];
 /** Preço de cada parte em R$ na unidade da tabela de preços: GiB lido, GiB gravado, GiB-dia guardado, mil execuções. */
 export type Precos = Record<ParteConsumo, number | null>;
 export const PRECOS_VAZIOS: Precos = { consulta: null, gravacao: null, retencao: null, funcao: null };
-/** O que fica no App State: os preços do contrato (null = usa o de lista) e o câmbio do preço de lista. */
-export interface ConfigPrecos { contrato: Precos; cambio: number | null }
+/** O que fica no App State: os preços do contrato (null = usa o de lista), o câmbio e (1.47.7) a moeda em que os preços
+    do contrato foram digitados (sem ela, reais, como até a 1.47.6). */
+export interface ConfigPrecos { contrato: Precos; cambio: number | null; moeda?: Moeda }
 export const CONFIG_PRECOS_VAZIA: ConfigPrecos = { contrato: { ...PRECOS_VAZIOS }, cambio: null };
-/** O preço usado em cada parte: o do contrato, se digitado; senão o de lista convertido. */
-export const precosEfetivos = (c: ConfigPrecos): Record<ParteConsumo, number> =>
-  Object.fromEntries(PARTES_CONSUMO.map((p) => [p, c.contrato[p] ?? precoDeLista(p, c.cambio)])) as Record<ParteConsumo, number>;
+/** O preço usado em cada parte, na moeda pedida (padrão: a da tela): o do contrato, se digitado (convertido se foi
+    digitado na outra moeda); senão o de lista. */
+export const precosEfetivos = (c: ConfigPrecos, moeda: Moeda = moedaDaTela()): Record<ParteConsumo, number> =>
+  Object.fromEntries(PARTES_CONSUMO.map((p) => [p, c.contrato[p] != null ? converterMoeda(c.contrato[p]!, c.moeda ?? "BRL", moeda, c.cambio) : precoDeLista(p, c.cambio, moeda)])) as Record<ParteConsumo, number>;
+/** Os preços do contrato na moeda pedida (para editar na tela). */
+export const contratoNaMoeda = (c: ConfigPrecos, moeda: Moeda = moedaDaTela()): Precos =>
+  Object.fromEntries(PARTES_CONSUMO.map((p) => [p, c.contrato[p] == null ? null : Number(converterMoeda(c.contrato[p]!, c.moeda ?? "BRL", moeda, c.cambio).toPrecision(6))])) as Precos;
 /** As partes que estão no preço de lista (sem preço do contrato). */
 export const partesNaLista = (c: ConfigPrecos) => PARTES_CONSUMO.filter((p) => c.contrato[p] == null);
 const CHAVE_PRECOS = "rum-flow.precos.v1";
@@ -105,10 +110,10 @@ export const totalEmReais = (q: Record<ParteConsumo, number | null>, precos: Pre
 const numeroOuNull = (x: unknown) => (typeof x === "number" && isFinite(x) && x >= 0 ? x : null);
 export async function lerPrecos(): Promise<ConfigPrecos> {
   try {
-    const v = JSON.parse((await stateClient.getAppState({ key: CHAVE_PRECOS })).value) as { contrato?: Record<string, unknown>; cambio?: unknown } & Record<string, unknown>;
+    const v = JSON.parse((await stateClient.getAppState({ key: CHAVE_PRECOS })).value) as { contrato?: Record<string, unknown>; cambio?: unknown; moeda?: unknown } & Record<string, unknown>;
     // 1.44.3 gravava só os preços do contrato no topo do objeto
     const contrato = v?.contrato ?? v;
-    return { contrato: Object.fromEntries(PARTES_CONSUMO.map((p) => [p, numeroOuNull(contrato?.[p])])) as Precos, cambio: numeroOuNull(v?.cambio) };
+    return { contrato: Object.fromEntries(PARTES_CONSUMO.map((p) => [p, numeroOuNull(contrato?.[p])])) as Precos, cambio: numeroOuNull(v?.cambio), ...(v?.moeda === "USD" || v?.moeda === "BRL" ? { moeda: v.moeda } : {}) };
   } catch { return { contrato: { ...PRECOS_VAZIOS }, cambio: null }; }
 }
 export async function salvarPrecos(c: ConfigPrecos): Promise<void> {

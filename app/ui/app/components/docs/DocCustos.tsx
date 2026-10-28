@@ -5,13 +5,13 @@
    (MODELO), nunca de números fixos. O detalhe técnico (o que cada ação lê, fórmulas, registros de controle) fica na
    documentação técnica em docs/ do repositório. Genérica: vale para qualquer tenant; sem cliente,
    ambiente, contrato nem data. Montada com o kit (./Kit); a calculadora usa as classes calc-* e doc-calc do styles.css. */
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { AiIcon, ApplicationsIcon, BarChartIcon, CalendarIcon, ClockIcon, FilterIcon, IdeaIcon, LineChartIcon, MagnifyingGlassIcon, MoneyIcon,
          PathIcon, StorageIcon, TracesIcon, UploadIcon, WorkflowSimpleIcon } from "@dynatrace/strato-icons";
 import { t, localidade } from "../../lib/i18n";
 import { Doc, Secao, Par, Lista, Tabela, Nota, Figura, Cod, Sub, Cartoes } from "./Kit";
-import { estimarCustos, MODELO, TARIFAS_LISTA, VOLUMETRIA_LAB, type Tarifas, type Volumetria } from "../../lib/custos";
-import { CAMBIO_PADRAO } from "../../lib/precos";
+import { estimarCustos, MODELO, VOLUMETRIA_LAB, tarifasLista, type Tarifas, type Volumetria } from "../../lib/custos";
+import { CAMBIO_PADRAO, moedaDaTela } from "../../lib/precos";
 
 const I = 16;
 
@@ -52,11 +52,14 @@ const Campo: React.FC<{ rotulo: string; dica?: string; unidade?: string; tipo?: 
 
 const Calculadora: React.FC = () => {
   const [vol, setVol] = useState<Textos<Volumetria>>(() => emTexto(VOLUMETRIA_LAB));
-  const [tar, setTar] = useState<Textos<Tarifas>>(() => emTexto(TARIFAS_LISTA));
+  const [tar, setTar] = useState<Textos<Tarifas>>(() => emTexto(tarifasLista()));
+  // 1.47.7: a moeda segue a língua da tela; ao trocar a língua, as tarifas voltam ao preço de lista na moeda nova
+  const moedaTela = moedaDaTela();
+  useEffect(() => { setTar(emTexto(tarifasLista(moedaTela))); }, [moedaTela]);
   // 1.46.0: Configuração › Atualização dos números (a cada 5 minutos, a carga não lê a cópia ao vivo)
   const [tempoReal, setTempoReal] = useState(true);
   const v = Object.fromEntries((Object.keys(VOLUMETRIA_LAB) as (keyof Volumetria)[]).map((k) => [k, numero(vol[k])])) as unknown as Volumetria;
-  const moeda = tar.moeda.trim() || TARIFAS_LISTA.moeda;
+  const moeda = tar.moeda.trim() || tarifasLista().moeda;
   const tf: Tarifas = {
     consultaPorGib: numero(tar.consultaPorGib), retencaoPorGibDia: numero(tar.retencaoPorGibDia),
     gravacaoPorGib: numero(tar.gravacaoPorGib), funcaoPorInvocacao: numero(tar.funcaoPorInvocacao), moeda,
@@ -119,7 +122,7 @@ const Calculadora: React.FC = () => {
     { nome: t("Leituras sob demanda", "On-demand reads"), valor: e.sobDemanda.custoMes },
   ];
   const maior = Math.max(0, ...partes.map((x) => x.valor));
-  const restaurar = () => { setVol(emTexto(VOLUMETRIA_LAB)); setTar(emTexto(TARIFAS_LISTA)); setTempoReal(true); };
+  const restaurar = () => { setVol(emTexto(VOLUMETRIA_LAB)); setTar(emTexto(tarifasLista())); setTempoReal(true); };
   const consulta = (gibMes: number) => $(gibMes * tf.consultaPorGib);
   const gravadoGibMes = (g.agregadosGibDia + g.errosGibDia + g.horasGibDia) * MODELO.diasMes;
   return (
@@ -137,7 +140,7 @@ const Calculadora: React.FC = () => {
           ))}
           <section className="calc-grupo">
             <h4>{t("Tarifas", "Rates")}</h4>
-            <p className="calc-nota">{t(`Valores iniciais: preço de lista da Dynatrace (referência pública) convertido a R$ pelo câmbio de referência (R$ ${CAMBIO_PADRAO.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} por US$), o mesmo do cartão "Consumo do app". Use as tarifas do seu contrato.`, `Initial values: Dynatrace list price (public reference) converted to BRL at the reference exchange rate (R$ ${CAMBIO_PADRAO.toFixed(2)} per USD), the same as the "App consumption" card. Use your contract's rates.`)}</p>
+            <p className="calc-nota">{t(`Valores iniciais: preço de lista da Dynatrace (referência pública) convertido a R$ pelo câmbio de referência (R$ ${CAMBIO_PADRAO.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} por US$), o mesmo do cartão "Consumo do app". Use as tarifas do seu contrato.`, `Initial values: Dynatrace list price (public reference), in USD, the same as the "App consumption" card. Use your contract's rates.`)}</p>
             <div className="doc-calc">
               {camposTar.map((c) => <Campo key={c.k} rotulo={c.rotulo} unidade={c.unidade} tipo={c.texto ? "text" : "number"} valor={tar[c.k]} mudar={(x) => setTar({ ...tar, [c.k]: x })} />)}
             </div>
@@ -289,7 +292,7 @@ export const DocCustos: React.FC = () => (
         "The \"App consumption\" card, in the Configuration, shows what the app really consumed, read from Dynatrace billing.")}</Par>
       <Cartoes itens={[
         { icone: <CalendarIcon size={I} />, titulo: t("Hoje e últimos 7 dias", "Today and last 7 days"),
-          texto: t("Consultas, gravação, retenção e execuções do workflow, em quantidade e em reais.", "Queries, ingest, retention and workflow runs, in quantity and in BRL.") },
+          texto: t("Consultas, gravação, retenção e execuções do workflow, em quantidade e em reais.", "Queries, ingest, retention and workflow runs, in quantity and in USD.") },
         { icone: <LineChartIcon size={I} />, titulo: t("Projeção de 30 dias", "30-day projection"),
           texto: t("Aparece em cada parte quando ela tem 24 horas de dados, pelo ritmo dos últimos dias.", "It shows for each part once it has 24 hours of data, at the pace of the last days.") },
         { icone: <BarChartIcon size={I} />, titulo: t("Por funcionalidade", "By feature"),

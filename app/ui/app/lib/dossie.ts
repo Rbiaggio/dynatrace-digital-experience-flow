@@ -58,7 +58,7 @@ export interface Orcamento {
 }
 export const ORCAMENTO_PADRAO: Orcamento = {
   maxOportunidades: MAX_OPORTUNIDADES, maxBytesDossie: MAX_BYTES_DOSSIE, maxBytesLidos: 1200 * GIB, janelaMin: 30,
-  maxTracesPorClasse: 10, maxTraces: 160, maxConsultasUserEvents: 4, limiarLentoMs: 3000, tarifaRsPorGiB: precoDeLista("consulta", null),
+  maxTracesPorClasse: 10, maxTraces: 160, maxConsultasUserEvents: 4, limiarLentoMs: 3000, tarifaRsPorGiB: precoDeLista("consulta", null, "BRL"),
 };
 /** Leitura esperada num ambiente grande por consulta (GiB), pelas medidas de um ambiente grande: o Grail
     lê blocos de cerca de 1 h, então janela curta não reduz na proporção; a amostragem reduz. Só para a documentação e a

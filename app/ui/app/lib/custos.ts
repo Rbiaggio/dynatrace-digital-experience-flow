@@ -29,7 +29,7 @@
    - consulta de métrica nativa, de entidades e o App State: sem custo (não entram).
    Tarifas de referência: preço de lista público da Dynatrace convertido a R$ (lib/precos.ts); quem usa troca pelas do contrato. */
 
-import { precoDeLista } from "./precos";
+import { precoDeLista, moedaDaTela, simboloMoeda, type Moeda } from "./precos";
 
 /** Volumetria do ambiente e uso do app (por dia, salvo onde indicado). */
 export interface Volumetria {
@@ -92,8 +92,10 @@ export const VOLUMETRIA_LAB: Volumetria = {
 /** Preço de lista público da Dynatrace (US$), só como referência. */
 /** 6 algarismos significativos: o campo da calculadora não mostra o ruído do ponto flutuante (0,003541999...). */
 const arred = (x: number) => Number(x.toPrecision(6));
-export const TARIFAS_LISTA: Tarifas = { consultaPorGib: arred(precoDeLista("consulta", null)), retencaoPorGibDia: arred(precoDeLista("retencao", null)), gravacaoPorGib: arred(precoDeLista("gravacao", null)),
-  funcaoPorInvocacao: arred(precoDeLista("funcao", null) / 1000), moeda: "R$" };
+/** 1.47.7: na moeda da tela (reais em português, pelo câmbio de referência; dólar em inglês). */
+export const tarifasLista = (moeda: Moeda = moedaDaTela()): Tarifas => ({ consultaPorGib: arred(precoDeLista("consulta", null, moeda)), retencaoPorGibDia: arred(precoDeLista("retencao", null, moeda)),
+  gravacaoPorGib: arred(precoDeLista("gravacao", null, moeda)), funcaoPorInvocacao: arred(precoDeLista("funcao", null, moeda) / 1000), moeda: simboloMoeda(moeda) });
+export const TARIFAS_LISTA: Tarifas = tarifasLista("BRL");
 
 /** Constantes do modelo (calibração do laboratório e limites do app). */
 export const MODELO = {

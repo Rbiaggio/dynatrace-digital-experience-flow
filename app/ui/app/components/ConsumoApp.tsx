@@ -2,8 +2,9 @@ import React, { useEffect, useState } from "react";
 import { dql, texto, num } from "../lib/dql";
 import { formatarInt } from "../lib/graph";
 import { t } from "../lib/i18n";
-import { CAMBIO_PADRAO, CONFIG_PRECOS_VAZIA, HORAS_PARA_PROJETAR, PARTES_CONSUMO, emReais, lerNumero, lerPrecos, partesNaLista, precoDeLista, precosEfetivos, qConsumoPorFuncionalidade,
+import { CAMBIO_PADRAO, CONFIG_PRECOS_VAZIA, HORAS_PARA_PROJETAR, PARTES_CONSUMO, contratoNaMoeda, emReais, lerNumero, lerPrecos, partesNaLista, precoDeLista, precosEfetivos, qConsumoPorFuncionalidade,
          qConsumoPorHora, resumirConsumo, salvarPrecos, totalEmReais, type ConfigPrecos, type ParteConsumo, type Precos, type ResumoConsumo } from "../lib/consumo";
+import { formatarDinheiro, moedaDaTela } from "../lib/precos";
 
 /** Cartão "Consumo do app" da Configuração (1.44.3): o que o app consumiu de verdade, pela cobrança da Dynatrace
     (lib/consumo.ts), hoje, nos últimos 7 dias e projetado para 30 dias, em quantidade e em reais pelos preços que o
@@ -25,8 +26,8 @@ const FUNCIONALIDADE: Record<string, [string, string]> = {
   sessoes: ["Lista de sessões", "Session list"], ia: ["Dynatrace Assist", "Dynatrace Assist"], filtros: ["Valores dos filtros", "Filter values"],
   llm: ["Análise por LLM", "LLM analysis"], ondefalha: ["Onde falha no backend?", "Where does it fail in the backend?"], outras: ["Outras", "Other"],
 };
-/** Em reais; abaixo de 1 centavo, com 4 casas (o valor de verdade, não "menos de"). */
-const reais = (v: number | null) => v == null ? "" : v > 0 && v < 0.00005 ? t("< R$ 0,0001", "< R$0.0001") : v.toLocaleString(t("pt-BR", "en-US"), { style: "currency", currency: "BRL", minimumFractionDigits: v > 0 && v < 0.01 ? 4 : 2, maximumFractionDigits: v > 0 && v < 0.01 ? 4 : 2 });
+/** Na moeda da tela (1.47.7: reais em português, dólar em inglês); abaixo de 1 centavo, com 4 casas. */
+const reais = (v: number | null) => formatarDinheiro(v);
 const dec = (n: number, casas: number) => n.toLocaleString(t("pt-BR", "en-US"), { minimumFractionDigits: casas, maximumFractionDigits: casas });
 const bytes = (gib: number) => gib >= 1 ? `${dec(gib, gib >= 100 ? 0 : 2)} GiB` : gib * 1024 >= 1 ? `${dec(gib * 1024, 0)} MB` : gib > 0 ? `${dec(gib * 1024 * 1024, 0)} KB` : "0";
 /** A quantidade de cada parte com a unidade dela. */
@@ -54,20 +55,30 @@ export const ConsumoApp: React.FC<{ appId: string }> = ({ appId }) => {
       setResumo(resumirConsumo(h.map((l) => ({ parte: texto(l.parte) ?? "", hora: texto(l.hora) ?? "", bytes: num(l.bytes), execucoes: num(l.execucoes), primeiro: texto(l.primeiro), ultimo: texto(l.ultimo) })), agora, meiaNoite));
       setFuncs(f.map((l) => ({ f: texto(l.funcionalidade) ?? "outras", gib: num(l.bytes) / 1024 ** 3, consultas: num(l.consultas) })));
     }).catch((ex) => { if (vivo) setErro(ex instanceof Error ? ex.message : String(ex)); });
-    lerPrecos().then((c) => {
-      if (!vivo) return;
-      setConfig(c);
-      const txt = (n: number | null) => (n == null ? "" : String(n).replace(".", t(",", ".")));
-      setRascunho({ ...Object.fromEntries(PARTES_CONSUMO.map((x) => [x, txt(c.contrato[x])])), cambio: txt(c.cambio) } as Record<ParteConsumo | "cambio", string>);
-    });
+    lerPrecos().then((c) => { if (vivo) setConfig(c); });
     return () => { vivo = false; };
   }, [appId]);
 
   const precos = precosEfetivos(config);
   const naLista = partesNaLista(config);
   const cambio = config.cambio ?? CAMBIO_PADRAO;
+  // 1.47.7: a moeda segue a língua da tela; os preços do contrato abrem para editar na moeda da tela e são guardados nela.
+  // O câmbio só aparece em reais (o preço de lista é em dólar)
+  const moeda = moedaDaTela();
+  // a língua trocada com a edição aberta: fecha (os campos estavam na outra moeda)
+  useEffect(() => { setEditando(false); }, [moeda]);
+  const outraMoeda = PARTES_CONSUMO.some((p) => config.contrato[p] != null) && (config.moeda ?? "BRL") !== moeda;
+  const abrirEdicao = () => {
+    const txt = (n: number | null) => (n == null ? "" : String(n).replace(".", t(",", ".")));
+    const c = contratoNaMoeda(config, moeda);
+    setRascunho({ ...Object.fromEntries(PARTES_CONSUMO.map((x) => [x, txt(c[x])])), cambio: txt(config.cambio) } as Record<ParteConsumo | "cambio", string>);
+    setEditando(true);
+  };
   const salvar = async () => {
-    const novo: ConfigPrecos = { contrato: Object.fromEntries(PARTES_CONSUMO.map((p) => [p, lerNumero(rascunho[p])])) as Precos, cambio: lerNumero(rascunho.cambio) };
+    const novo: ConfigPrecos = { contrato: Object.fromEntries(PARTES_CONSUMO.map((p) => [p, lerNumero(rascunho[p])])) as Precos, cambio: moeda === "BRL" ? lerNumero(rascunho.cambio) : config.cambio, moeda };
+    // nada mudou: não grava (os preços continuam na moeda em que foram digitados)
+    const atual = contratoNaMoeda(config, moeda);
+    if (PARTES_CONSUMO.every((p) => novo.contrato[p] === atual[p]) && novo.cambio === config.cambio) { setEditando(false); return; }
     setSalvando(true);
     try { await salvarPrecos(novo); setConfig(novo); setEditando(false); }
     catch (ex) { setErro(ex instanceof Error ? ex.message : String(ex)); }
@@ -106,15 +117,15 @@ export const ConsumoApp: React.FC<{ appId: string }> = ({ appId }) => {
                 `The projection follows each part's pace over up to the last 7 days, from ${HORAS_PARA_PROJETAR} h of data on; retention is the volume kept in the app's buckets.`)}</p>
               {editando ? (
                 <div className="cs-precos">
-                  <p className="cfg-acao-nota">{t("Preços do seu contrato em reais, na unidade de cada linha; em branco, vale o preço de lista. Ficam guardados no app.", "Your contract prices in BRL, in each line's unit; left blank, the list price applies. They are kept in the app.")}</p>
+                  <p className="cfg-acao-nota">{t("Preços do seu contrato em reais, na unidade de cada linha; em branco, vale o preço de lista. Ficam guardados no app.", "Your contract prices in USD, in each line's unit; left blank, the list price applies. They are kept in the app.")}</p>
                   {PARTES_CONSUMO.map((p) => (
                     <label key={p}><span>{t(...ROTULO_PARTE[p])}</span>
                       <input inputMode="decimal" value={rascunho[p]} onChange={(e) => setRascunho((r) => ({ ...r, [p]: e.target.value }))} placeholder={dec(precoDeLista(p, lerNumero(rascunho.cambio)), 4)} aria-label={`${t(...ROTULO_PARTE[p])} ${t(...UNIDADE_PRECO[p])}`} />
-                      <small>{t("R$ ", "R$ ")}{t(...UNIDADE_PRECO[p])}{t(" · lista: ", " · list: ")}{reais(precoDeLista(p, lerNumero(rascunho.cambio)))}</small></label>
+                      <small>{t("R$ ", "US$ ")}{t(...UNIDADE_PRECO[p])}{t(" · lista: ", " · list: ")}{reais(precoDeLista(p, lerNumero(rascunho.cambio)))}</small></label>
                   ))}
-                  <label><span>{t("Câmbio", "Exchange rate")}</span>
+                  {moeda === "BRL" && <label><span>{t("Câmbio", "Exchange rate")}</span>
                     <input inputMode="decimal" value={rascunho.cambio} onChange={(e) => setRascunho((r) => ({ ...r, cambio: e.target.value }))} placeholder={dec(CAMBIO_PADRAO, 2)} aria-label={t("Câmbio, reais por dólar", "Exchange rate, BRL per USD")} />
-                    <small>{t("R$ por US$, só para o preço de lista", "BRL per USD, only for the list price")}</small></label>
+                    <small>{t("R$ por US$: converte o preço de lista e o que estiver em dólar", "BRL per USD: converts the list price and anything in USD")}</small></label>}
                   <div className="config-acoes">
                     <button className="botao-primario" disabled={salvando} onClick={salvar}>{salvando ? t("salvando…", "saving…") : t("Salvar preços", "Save prices")}</button>
                     <button className="botao-leve" onClick={() => setEditando(false)}>{t("Cancelar", "Cancel")}</button>
@@ -122,10 +133,11 @@ export const ConsumoApp: React.FC<{ appId: string }> = ({ appId }) => {
                 </div>
               ) : (
                 <p className="cs-aviso-preco">
-                  {naLista.length === PARTES_CONSUMO.length ? t(`Preço de lista da Dynatrace (US$ × R$ ${dec(cambio, 2)}). Atualize para o preço do seu contrato.`, `Dynatrace list price (USD × R$ ${dec(cambio, 2)}). Update it to your contract pricing.`)
-                    : naLista.length ? t(`${naLista.length} de ${PARTES_CONSUMO.length} linhas no preço de lista da Dynatrace (US$ × R$ ${dec(cambio, 2)}); as outras, no do contrato.`, `${naLista.length} of ${PARTES_CONSUMO.length} lines at the Dynatrace list price (USD × R$ ${dec(cambio, 2)}); the others at contract pricing.`)
+                  {naLista.length === PARTES_CONSUMO.length ? t(`Preço de lista da Dynatrace (US$ × R$ ${dec(cambio, 2)}). Atualize para o preço do seu contrato.`, "Dynatrace list price (USD). Update it to your contract pricing.")
+                    : naLista.length ? t(`${naLista.length} de ${PARTES_CONSUMO.length} linhas no preço de lista da Dynatrace (US$ × R$ ${dec(cambio, 2)}); as outras, no do contrato.`, `${naLista.length} of ${PARTES_CONSUMO.length} lines at the Dynatrace list price (USD); the others at contract pricing.`)
                     : t("Preços do contrato.", "Contract pricing.")}
-                  {" "}<button className="painel-link" onClick={() => setEditando(true)}>{t("Editar preços", "Edit prices")}</button>
+                  {outraMoeda && t(` Os do contrato foram digitados em dólar e aparecem convertidos a R$ ${dec(cambio, 2)} por US$.`, ` Contract prices were entered in BRL and are shown converted at R$ ${dec(cambio, 2)} per USD.`)}
+                  {" "}<button className="painel-link" onClick={abrirEdicao}>{t("Editar preços", "Edit prices")}</button>
                 </p>
               )}
             </div>

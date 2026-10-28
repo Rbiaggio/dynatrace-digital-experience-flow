@@ -198,7 +198,7 @@ export const catalogoRegras = (): RegraCatalogo[] => [
   { id: "W1", canal: "web", nome: t("Web Vitals ruins por página", "Poor Web Vitals per page"), esforco: "M", tipo: "front-desempenho",
     deteccao: t("LCP > 4 s, INP > 500 ms ou CLS > 0,25 em 20% ou mais das cargas (30 cargas ou mais).", "LCP > 4 s, INP > 500 ms or CLS > 0.25 in 20% or more of the loads (30 loads or more)."),
     fonte: t("view_summary do user.events, sob demanda, ou métrica por tela no OpenPipeline (Validar: volumetria).", "user.events view_summary on demand, or a per-screen OpenPipeline metric (Validate: volume)."),
-    custo: t("Sob demanda: uma leitura de 30 min da cópia. Métrica: R$ 0 na consulta.", "On demand: one 30-min read of the copy. Metric: R$ 0 to query.") },
+    custo: t("Sob demanda: uma leitura de 30 min da cópia. Métrica: R$ 0 na consulta.", "On demand: one 30-min read of the copy. Metric: no query cost.") },
   { id: "W1c", canal: "web", nome: t("Chamada lenta que segura a página (por estado)", "Slow call holding the page (by state)"), esforco: "M", tipo: "front-desempenho",
     deteccao: t("Chamada própria com p75 > 3 s, ou lenta (> 3 s) em 30% ou mais das chamadas de um estado (30 chamadas ou mais).", "Own call with p75 > 3 s, or slow (> 3 s) in 30% or more of a state's calls (30 calls or more)."),
     fonte: t("QUA-U, grupo novo \"3chamada\" (mesma leitura).", "QUA-U, new group \"3chamada\" (same read)."), custo: t("R$ 0 a mais.", "No extra cost.") },

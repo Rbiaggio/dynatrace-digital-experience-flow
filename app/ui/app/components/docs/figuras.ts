@@ -3,8 +3,7 @@
    em tamanho original em ui/assets/docs/grande/, aberta ao clicar na figura), que o dt-app copia para assets/ do app. As
    chaves são usadas pelas sub-abas (<Figura id="..." />); uma chave sem arquivo não renderiza nada. Prints da versão
    atual: o App inteiro fora da plataforma, com os dados do laboratório ao vivo e só leitura. Visão geral e Flow em
-   "Última hora"; a análise por LLM com a coleta real no laboratório e o LLM simulado (aceite e progresso) e uma análise
-   real do laboratório (resultado). */
+   "Última hora"; a análise por LLM com a coleta real no laboratório e o LLM simulado (aceite, progresso e resultado). */
 export interface FiguraDoc { src: string; largura: number; altura: number; grande?: { src: string; largura: number; altura: number } }
 /** URL do arquivo estático do app: assets/docs/<nome>, resolvida pela base do documento (o dt-app injeta o <base href>). */
 const urlAsset = (nome: string) => { try { return new URL(`assets/docs/${nome}`, document.baseURI).toString(); } catch { return `assets/docs/${nome}`; } };
@@ -27,7 +26,7 @@ export const FIGURAS: Record<string, FiguraDoc> = {
   "tema-escuro": f("tema-escuro.jpg", 1400, 4235),
   "ingles": f("ingles.jpg", 1400, 4252),
   "configuracao": f("configuracao.jpg", 1400, 1057, [1600, 1208]),
-  "llm-aceite": f("llm-aceite.jpg", 694, 757),
-  "llm-progresso": f("llm-progresso.jpg", 1054, 372),
-  "llm-resultado": f("llm-resultado.jpg", 1070, 1338),
+  "llm-aceite": f("llm-aceite.jpg", 694, 719),
+  "llm-progresso": f("llm-progresso.jpg", 1054, 302),
+  "llm-resultado": f("llm-resultado.jpg", 1070, 1211),
 };
