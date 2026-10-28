@@ -4,43 +4,46 @@
 export interface Iniciativa {
   id: string;
   nome: string;
+  /** 1.47.10: o nome na tela em inglês */
+  nomeEn: string;
   descricao: string;
   /** sinais do pacote que indicam esta iniciativa (ajuda o modelo a escolher) */
   quandoIndicar: string;
 }
 
 export const CATALOGO_INICIATIVAS: Iniciativa[] = [
-  { id: "diagnostico-experiencia", nome: "Diagnosticar a experiência digital e a observabilidade",
+  { id: "diagnostico-experiencia", nome: "Diagnosticar a experiência digital e a observabilidade", nomeEn: "Diagnose the digital experience and observability",
     descricao: "Diagnóstico estruturado das jornadas, da instrumentação e da operação, com priorização pelo impacto no cliente e roteiro de evolução.",
     quandoIndicar: "Muitos problemas de naturezas diferentes, sem dono claro, ou necessidade de priorizar com o negócio." },
-  { id: "engenharia-performance", nome: "Melhorar o desempenho web e mobile",
+  { id: "engenharia-performance", nome: "Melhorar o desempenho web e mobile", nomeEn: "Improve web and mobile performance",
     descricao: "Análise e correção de lentidão de carga e interação (Web Vitals, Apdex), testes de carga e otimização de frontend e APIs.",
     quandoIndicar: "Apdex Razoável, Ruim ou Inaceitável, p75 de carga acima de 3 s, saídas por carga lenta." },
-  { id: "correcao-aplicacoes", nome: "Corrigir as aplicações pela causa raiz",
+  { id: "correcao-aplicacoes", nome: "Corrigir as aplicações pela causa raiz", nomeEn: "Fix the applications at the root cause",
     descricao: "Correção das falhas de backend e frontend com causa raiz, testes automatizados e entrega contínua.",
     quandoIndicar: "Erros de servidor (HTTP 5xx) ou de tela concentrados em páginas e endpoints que tiram clientes do fluxo." },
-  { id: "sre-confiabilidade", nome: "Definir metas de confiabilidade (SLO) e resiliência",
+  { id: "sre-confiabilidade", nome: "Definir metas de confiabilidade (SLO) e resiliência", nomeEn: "Set reliability targets (SLO) and build resilience",
     descricao: "SLOs por jornada, error budgets, alertas acionáveis, revisão de incidentes e práticas de resiliência.",
     quandoIndicar: "Falhas recorrentes em serviços de backend, picos de erro, ausência de metas de confiabilidade por jornada." },
-  { id: "instrumentacao-qualidade", nome: "Melhorar a instrumentação e a qualidade do dado",
+  { id: "instrumentacao-qualidade", nome: "Melhorar a instrumentação e a qualidade do dado", nomeEn: "Improve instrumentation and data quality",
     descricao: "Nome de telas, monitoramento híbrido de WebView, propagação de trace entre domínios, tags de negócio e padrões de captura.",
     quandoIndicar: "Problemas de qualidade do dado: telas sem nome, páginas sem origem, chamadas sem trace, frames." },
-  { id: "jornadas-negocio", nome: "Medir as jornadas de negócio e a conversão",
+  { id: "jornadas-negocio", nome: "Medir as jornadas de negócio e a conversão", nomeEn: "Measure business journeys and conversion",
     descricao: "Definição de jornadas e funis, indicadores de conversão e abandono, eventos de negócio e painéis para as áreas de produto.",
     quandoIndicar: "Funis com queda forte entre etapas, poucas jornadas definidas, abandono depois de erro." },
-  { id: "automacao-aiops", nome: "Automatizar a detecção e a resposta (AIOps)",
+  { id: "automacao-aiops", nome: "Automatizar a detecção e a resposta (AIOps)", nomeEn: "Automate detection and response (AIOps)",
     descricao: "Workflows de detecção e resposta, remediação automática, correlação de eventos e uso de IA na operação.",
     quandoIndicar: "Problemas que se repetem e poderiam ser detectados ou corrigidos automaticamente." },
-  { id: "governanca-observabilidade", nome: "Organizar a governança e os painéis executivos",
+  { id: "governanca-observabilidade", nome: "Organizar a governança e os painéis executivos", nomeEn: "Organize governance and executive dashboards",
     descricao: "Modelo de responsabilidade por serviço e jornada, painéis executivos, rituais de acompanhamento e gestão de custo da plataforma.",
     quandoIndicar: "Vários times envolvidos, falta de visão executiva ou de dono por jornada e serviço." },
-  { id: "acompanhamento-continuo", nome: "Acompanhar a observabilidade de forma contínua",
+  { id: "acompanhamento-continuo", nome: "Acompanhar a observabilidade de forma contínua", nomeEn: "Keep track of observability on an ongoing basis",
     descricao: "Revisão periódica da experiência digital, tratamento de alertas e evolução da plataforma.",
     quandoIndicar: "Necessidade de acompanhar os indicadores depois das correções." },
-  { id: "monitoracao-sintetica", nome: "Testar as jornadas críticas com monitoração sintética",
+  { id: "monitoracao-sintetica", nome: "Testar as jornadas críticas com monitoração sintética", nomeEn: "Test critical journeys with synthetic monitoring",
     descricao: "Testes sintéticos das jornadas críticas, de várias regiões, para detectar falhas antes do cliente e validar correções.",
     quandoIndicar: "Jornadas críticas sem teste ativo, problemas regionais, necessidade de provar a correção." },
 ];
 
 export const idsCatalogo = (c: Iniciativa[] = CATALOGO_INICIATIVAS) => c.map((s) => s.id);
 export const nomeServico = (id: string | null, c: Iniciativa[] = CATALOGO_INICIATIVAS) => (id ? c.find((s) => s.id === id)?.nome ?? id : "");
+export const nomeServicoEn = (id: string | null, c: Iniciativa[] = CATALOGO_INICIATIVAS) => (id ? c.find((s) => s.id === id)?.nomeEn ?? nomeServico(id, c) : "");

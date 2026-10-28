@@ -1,6 +1,6 @@
 {
   "name": "digital-experience-flow",
-  "version": "1.47.8",
+  "version": "1.47.10",
   "author": "Rodrigo Biaggio",
   "private": true,
   "repository": { "type": "git", "url": "https://github.com/Rbiaggio/dynatrace-digital-experience-flow" },

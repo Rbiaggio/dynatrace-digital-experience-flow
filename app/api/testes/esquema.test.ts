@@ -3,7 +3,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { schemaOportunidade, schemaSintese, lerOportunidade, lerSintese, markdownDaAnalise, lerObjeto } from "../lib/promptLlm";
-import { idsCatalogo } from "../lib/catalogoIniciativas";
+import { idsCatalogo, nomeServico, nomeServicoEn } from "../lib/catalogoIniciativas";
 import type { OportunidadeAnalisada } from "../../ui/app/lib/llmCliente";
 import { OP_TESTE, SINTESE_TESTE } from "./falsos/servidorLLM";
 
@@ -54,6 +54,10 @@ test("leitura da síntese: id que não existe e serviço fora do catálogo saem;
   assert.deepEqual(s.priorizacao.map((p) => [p.id, p.ordem]), [["o1", 1], ["o2", 2]]);
   assert.equal(s.ondas[1].onda, "60");
   assert.deepEqual(s.iniciativasRecomendadas.map((x) => x.servico), ["correcao-aplicacoes"]);
+  // 1.47.10: a iniciativa leva também o nome em inglês (o da tela em inglês), do catálogo
+  assert.equal(s.iniciativasRecomendadas[0].nomeServico, nomeServico("correcao-aplicacoes"));
+  assert.equal(s.iniciativasRecomendadas[0].nomeServicoEn, nomeServicoEn("correcao-aplicacoes"));
+  assert.notEqual(nomeServicoEn("correcao-aplicacoes"), nomeServico("correcao-aplicacoes"));
   assert.match(s.resumoExecutivo, /oportunidade 2/);   // o id que escapou para o texto vira "oportunidade 2"
   assert.ok(!/[—–]/.test(JSON.stringify(s)));
   assert.equal(lerSintese(JSON.stringify({ x: 1 }), ["o1"]), null);
@@ -75,6 +79,10 @@ test("texto pronto: resumo estrutural no topo e cada oportunidade em Problema x 
   assert.ok(md.indexOf("## Resumo estrutural") < md.indexOf("## Oportunidades"));
   for (const k of ["**Problema:**", "**Causa raiz**", "**Solução:**", "**Benefício:**", "Prova no Digital Experience Flow", "Causas estruturais comuns", "Plano em ondas", "Iniciativas recomendadas"]) assert.ok(md.includes(k), k);
   assert.match(md, /Não foi analisada: não respondeu/);
+  // 1.47.10: em inglês, o nome da iniciativa e o do motor simulado saem em inglês
+  const mdEn = markdownDaAnalise(ops, s, { motor: { nome: "LLM simulado", provedor: "simulado", modelo: "x", simulado: true }, quando: "2026-10-17T12:00:00Z", periodo: "2 h", idioma: "en" });
+  assert.ok(s.iniciativasRecomendadas.length > 0 && s.iniciativasRecomendadas.every((x) => !!x.nomeServicoEn && mdEn.includes(x.nomeServicoEn)));
+  assert.match(mdEn, /simulated LLM \(local test server\)/);
   assert.ok(!/[—–]/.test(md));
   const en = markdownDaAnalise(ops, null, { motor: { nome: "x", provedor: "simulado", modelo: "x", simulado: true }, quando: "2026-10-17T12:00:00Z", periodo: "2 h", idioma: "en" });
   assert.match(en, /Problem x Cause x Solution x Benefit/);

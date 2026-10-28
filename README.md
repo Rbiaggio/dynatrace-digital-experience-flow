@@ -9,7 +9,7 @@ applications, where they hit errors, where they give up, and which backend servi
 
 [Português](README.pt-BR.md) · [Install](#install) · [Test it](#test-it) · [How it works](#how-it-works) · [Costs](#costs)
 
-![Overview](app/ui/assets/docs/grande/visao-geral.jpg)
+![Overview](app/ui/assets/docs/grande/en/visao-geral.jpg)
 
 > Not an official Dynatrace product. Screenshots come from a demo lab with simulated traffic (`lab/`); no customer data.
 
@@ -42,7 +42,7 @@ applications, where they hit errors, where they give up, and which backend servi
   benefit per opportunity, common causes and a 30/60/90-day plan. Masked evidence only, with the user's consent.
   The result reads from the overview to the detail, and the long model text stays one click away.
 
-<p align="center"><img src="app/ui/assets/docs/llm-resultado.jpg" width="720" alt="LLM analysis result: summary in numbers, common causes, where to start, plan and each opportunity (simulated LLM)"></p>
+<p align="center"><img src="app/ui/assets/docs/en/llm-resultado.jpg" width="720" alt="LLM analysis result: summary in numbers, common causes, where to start, plan and each opportunity (simulated LLM)"></p>
 
 ### Built for the people who run it
 
@@ -52,15 +52,15 @@ applications, where they hit errors, where they give up, and which backend servi
 
 | Flow | Journey funnel |
 |---|---|
-| ![Flow](app/ui/assets/docs/grande/flow-grafo.jpg) | ![Journey](app/ui/assets/docs/grande/flow-jornada.jpg) |
+| ![Flow](app/ui/assets/docs/grande/en/flow-grafo.jpg) | ![Journey](app/ui/assets/docs/grande/en/flow-jornada.jpg) |
 
 | Top flows as funnels (Overview) | What is affecting customers |
 |---|---|
-| ![Top flows](app/ui/assets/docs/grande/principais-fluxos.jpg) | ![What is affecting customers](app/ui/assets/docs/grande/afetando-clientes.jpg) |
+| ![Top flows](app/ui/assets/docs/grande/en/principais-fluxos.jpg) | ![What is affecting customers](app/ui/assets/docs/grande/en/afetando-clientes.jpg) |
 
 | Page drilldown: errors and where the failure starts | Traces: failed and slowest calls | Backend path of the page |
 |---|---|---|
-| ![Page errors and where it fails in the backend](docs/img/drilldown-erros.jpg) | ![Page traces](docs/img/drilldown-traces.jpg) | ![Backend path](docs/img/drilldown-backend.jpg) |
+| ![Page errors and where it fails in the backend](docs/img/en/drilldown-erros.jpg) | ![Page traces](docs/img/en/drilldown-traces.jpg) | ![Backend path](docs/img/en/drilldown-backend.jpg) |
 
 ## How it works
 

@@ -14,6 +14,7 @@ import { mascarar } from "./assist";
 import { catalogoRegras, textoTipo, textoEsforco, letraEsforco, nomeCurtoApp, PESOS, PESO_ESFORCO, type Oportunidade, type ResultadoOportunidades, type TipoServico, type IdRegra } from "./oportunidades";
 import type { ProblemaDado } from "./qualidade";
 import type { Confianca, Esforco, ResultadoLlm } from "./llmCliente";
+import { nomeMotor } from "./llmCliente";
 
 // idioma da interface (lib/i18n.ts): cópia local, como em lib/inicio.ts
 const t = (pt: string, en: string) => ((globalThis as { __DEF_IDIOMA?: string }).__DEF_IDIOMA === "en" ? en : pt);
@@ -35,7 +36,7 @@ export const catalogoIniciativasPadrao = (): Record<TipoServico, IniciativaSuger
   "front-desempenho": { nome: t("Levar os Core Web Vitals à meta", "Bring Core Web Vitals to target"), entrega: t("orçamento de desempenho, carga tardia de componentes, cache e timeout de APIs, espaço reservado contra CLS, guia para o time", "performance budget, lazy loading of components, API cache and timeout, reserved space against CLS, team guide") },
   "front-codigo": { nome: t("Estabilizar o código do frontend", "Stabilize the frontend code"), entrega: t("triagem dos erros de JavaScript por impacto, correção, testes de tela automatizados e alerta de regressão", "triage of JavaScript errors by impact, fixes, automated page tests and regression alerts") },
   mobile: { nome: t("Melhorar o desempenho e a estabilidade do app", "Improve app performance and stability"), entrega: t("crash e ANR, abertura do app, ações lentas, versão com monitoração e meta no Apdex mobile", "crash and ANR, app start, slow actions, monitored release and a mobile Apdex target") },
-  observabilidade: { nome: t("Completar a observabilidade (RUM, OpenPipeline, Grail)", "Complete the observability (RUM, OpenPipeline, Grail)"), entrega: t("nomes de telas, correlação RUM e backend, métrica de Apdex por tela (web e mobile), custo de DPS sob controle", "screen names, RUM and backend correlation, per-screen Apdex metric (web and mobile), DPS cost under control") },
+  observabilidade: { nome: t("Completar a observabilidade (RUM, OpenPipeline, Grail)", "Complete observability (RUM, OpenPipeline, Grail)"), entrega: t("nomes de telas, correlação RUM e backend, métrica de Apdex por tela (web e mobile), custo de DPS sob controle", "screen names, RUM and backend correlation, per-screen Apdex metric (web and mobile), DPS cost under control") },
   jornada: { nome: t("Medir e melhorar as jornadas e a conversão", "Measure and improve journeys and conversion"), entrega: t("jornadas salvas no Digital Experience Flow, funis, mensagens de erro com saída para o cliente, testes A/B", "journeys saved in Digital Experience Flow, funnels, error messages with a way out for the customer, A/B tests") },
 });
 const acompanhamento = (): IniciativaSugerida => ({ nome: t("Rever a experiência digital todo mês", "Review the digital experience every month"), entrega: t("revisão mensal das oportunidades com o negócio, relatório, priorização do backlog e medição do ganho (Apdex, conversão, saídas após erro)", "monthly review of the opportunities with the business, report, backlog prioritization and measurement of the gain (Apdex, conversion, exits after errors)") });
@@ -425,8 +426,8 @@ export function gerarAnaliseLlmPdf(d: DadosAnalisePdf): Uint8Array {
   const reais = (v: number) => formatarDinheiro(d.precoConsulta != null && col ? (col.bytes / 1024 ** 3) * d.precoConsulta : v);
   const linhas = [
     `${m(d.escopo)} · ${t("dados de", "data from")} ${m(d.periodo)}`,
-    t(`${ops.length === 1 ? "1 oportunidade analisada" : `${ops.length} oportunidades analisadas`} (${r.estado.prontas === 1 ? "1 pronta" : `${r.estado.prontas} prontas`}${r.estado.falhas ? `, ${r.estado.falhas} com falha` : ""}) · ${m(r.motor.nome)}, modelo ${m(r.motor.modelo)}`,
-      `${ops.length === 1 ? "1 opportunity analyzed" : `${ops.length} opportunities analyzed`} (${r.estado.prontas} ready${r.estado.falhas ? `, ${r.estado.falhas} failed` : ""}) · ${m(r.motor.nome)}, model ${m(r.motor.modelo)}`),
+    t(`${ops.length === 1 ? "1 oportunidade analisada" : `${ops.length} oportunidades analisadas`} (${r.estado.prontas === 1 ? "1 pronta" : `${r.estado.prontas} prontas`}${r.estado.falhas ? `, ${r.estado.falhas} com falha` : ""}) · ${m(nomeMotor(r.motor))}, modelo ${m(r.motor.modelo)}`,
+      `${ops.length === 1 ? "1 opportunity analyzed" : `${ops.length} opportunities analyzed`} (${r.estado.prontas} ready${r.estado.falhas ? `, ${r.estado.falhas} failed` : ""}) · ${m(nomeMotor(r.motor))}, model ${m(r.motor.modelo)}`),
     ...(col ? [t(`Evidências lidas no ambiente: ${int(col.consultas)} consultas, ${mb(col.bytes)} MB no Grail (${reais(col.custoRs)} pelo preço de consulta em uso)`, `Evidence read in the environment: ${int(col.consultas)} queries, ${mb(col.bytes)} MB in Grail (${reais(col.custoRs)} at the query price in use)`)] : []),
     t(`Gerado${d.geradoPor ? ` para ${m(d.geradoPor)}` : ""} em ${quando.toLocaleString(loc())}`, `Generated${d.geradoPor ? ` for ${m(d.geradoPor)}` : ""} on ${quando.toLocaleString(loc())}`),
   ];
@@ -470,7 +471,7 @@ export function gerarAnaliseLlmPdf(d: DadosAnalisePdf): Uint8Array {
     }
     if (s.iniciativasRecomendadas.length) {
       f.titulo(t("Iniciativas recomendadas", "Recommended initiatives"), 2);
-      for (const a of s.iniciativasRecomendadas) f.bloco(m(`${a.nomeServico}${a.oportunidades.length ? ` (${rotOps(a.oportunidades)})` : ""}: ${a.comoAjuda}`), { tam: 9, x: M + 2, depois: 1.2 });
+      for (const a of s.iniciativasRecomendadas) f.bloco(m(`${t(a.nomeServico, a.nomeServicoEn ?? a.nomeServico)}${a.oportunidades.length ? ` (${rotOps(a.oportunidades)})` : ""}: ${a.comoAjuda}`), { tam: 9, x: M + 2, depois: 1.2 });
       f.bloco(t("Iniciativas sugeridas pela análise; ajuste ao seu contexto.", "Initiatives suggested by the analysis; adjust them to your context."), { tam: 8, cor: COR.sub });
     }
     if (s.oQueFaltaMedir.length) { f.titulo(t("O que falta medir", "What is still to be measured"), 2); for (const x of s.oQueFaltaMedir) f.bloco(m(`- ${x}`), { tam: 8.8, x: M + 2, depois: 0.8 }); }

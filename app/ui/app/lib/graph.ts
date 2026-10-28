@@ -453,7 +453,7 @@ export const formatarInt = (n: number) => n.toLocaleString(loc());
 export const formatarDec = (n: number, casas = 1) => n.toLocaleString(loc(), { minimumFractionDigits: casas, maximumFractionDigits: casas });
 /** Percentual com até 1 casa, no formato do idioma ("2,5%" / "2.5%"; "3%" sem ",0"); "<0,1%" e ">99,9%" nas pontas. */
 export const formatarPctFino = (p: number | null) => {
-  if (p == null) return "–";
+  if (p == null) return "-";
   const f = (n: number) => n.toLocaleString(loc(), { minimumFractionDigits: 0, maximumFractionDigits: 1 });
   return p === 0 ? "0%" : p < 0.1 ? `<${f(0.1)}%` : p > 99.9 && p < 100 ? `>${f(99.9)}%` : `${p < 10 ? f(p) : Math.round(p)}%`;
 };

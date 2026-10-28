@@ -94,7 +94,7 @@ export const ExemplosErro: React.FC<{ exemplos?: ExemploErro[] }> = ({ exemplos 
     <ul className="dp-exemplos">
       {exemplos.map((x, i) => (
         <li key={i}>
-          <span className="dp-exemplo-hora">{x.h ? hora(x.h) : "–"}</span>
+          <span className="dp-exemplo-hora">{x.h ? hora(x.h) : "-"}</span>
           {x.d != null && <span className="dp-exemplo-dur">{formatarMs(x.d)}</span>}
           {x.t && <LinkTrace trace={x.t} inicio={x.h ?? undefined} rotulo={t("Abrir trace", "Open trace")} />}
           {x.s && <LinkSessao id={x.s} quando={x.h} />}
@@ -306,7 +306,7 @@ export const DetailPanel: React.FC<Props> = ({ abaInicial, janela, robos, grafo,
           rosca={<RoscaPainel pct={pf ?? 0} tom="erro" rotulo={textoPct(pf)} titulo={t(`${textoPct(pf)} das requisições com falha`, `${textoPct(pf)} of requests failed`)} />}
           numero={s ? formatarInt(s.n) : formatarInt(no.chamadas)} rotulo={t("requisições", "requests")} sub={s ? t(`${formatarInt(s.falhas)} com falha no período`, `${formatarInt(s.falhas)} failed in the timeframe`) : undefined}
           linhas={[
-            { icone: <StopwatchIcon size={16} />, valor: s?.rtMs != null ? formatarMs(s.rtMs) : "–", texto: t("de tempo de resposta, em média", "response time, on average") },
+            { icone: <StopwatchIcon size={16} />, valor: s?.rtMs != null ? formatarMs(s.rtMs) : "-", texto: t("de tempo de resposta, em média", "response time, on average") },
             { icone: <ArrowLeftIcon size={16} />, valor: formatarInt(chamadores), texto: t("chamam este serviço (páginas, frontends e serviços)", "call this service (pages, frontends and services)") },
             { icone: <ArrowRightIcon size={16} />, valor: formatarInt(saidas.length), texto: t("serviços chamados por ele", "services it calls") },
           ]} />
@@ -351,7 +351,7 @@ export const DetailPanel: React.FC<Props> = ({ abaInicial, janela, robos, grafo,
   const linhas: LinhaIndicador[] = [
     { icone: <LogoutIcon size={16} />, valor: textoPct(pctFim), texto: t(`encerram a sessão aqui (${formatarInt(no.fim)})`, `end the session here (${formatarInt(no.fim)})`), critico: false },
     { icone: <WarningIcon size={16} />, valor: formatarInt(no.erros), texto: no.erros === 0 ? t("erros neste período", "errors in this timeframe") : t(`erros: ${formatarInt(no.falhas)} chamadas ao servidor com falha, ${formatarInt(no.excecoes)} na tela`, `errors: ${formatarInt(no.falhas)} failed server calls, ${formatarInt(no.excecoes)} on the screen`), critico: no.erros > 0 },
-    { icone: <StopwatchIcon size={16} />, valor: carga?.mediaMs != null ? formatarMs(carga.mediaMs) : carga ? "–" : "…",
+    { icone: <StopwatchIcon size={16} />, valor: carga?.mediaMs != null ? formatarMs(carga.mediaMs) : carga ? "-" : "…",
       texto: carga?.p75Ms != null ? (modoNovo ? t(`para carregar, em média (p75 ≈ ${formatarMs(carga.p75Ms)})`, `to load, on average (p75 ≈ ${formatarMs(carga.p75Ms)})`) : t(`para carregar, em média (p75 ${formatarMs(carga.p75Ms)})`, `to load, on average (p75 ${formatarMs(carga.p75Ms)})`)) : t("para carregar", "to load"),
       titulo: no.tempoMs != null ? t(`Os clientes ficam ${formatarMs(no.tempoMs)} nesta página, em média`, `Customers stay ${formatarMs(no.tempoMs)} on this page, on average`) : undefined },
   ];
@@ -502,7 +502,7 @@ export const DetailPanel: React.FC<Props> = ({ abaInicial, janela, robos, grafo,
                     <span className="dp-chip falha">{e.status ?? t("falhou", "failed")}</span>
                     <div className="dp-lista-texto">
                       <code>{e.caminho ?? e.nome}</code>
-                      <span className="dp-lista-meta">{x.h ? hora(x.h) : ""}{x.d != null ? ` · ${formatarMs(x.d)}` : ""} · <LinkTrace trace={x.t!} inicio={x.h ?? undefined} rotulo={t("Abrir trace", "Open trace")} />{x.s ? <> · <LinkSessao id={x.s} quando={x.h} /></> : null}</span>
+                      <span className="dp-lista-meta">{[x.h ? hora(x.h) : "", x.d != null ? formatarMs(x.d) : ""].filter(Boolean).map((v) => `${v} · `).join("")}<LinkTrace trace={x.t!} inicio={x.h ?? undefined} rotulo={t("Abrir trace", "Open trace")} />{x.s ? <> · <LinkSessao id={x.s} quando={x.h} /></> : null}</span>
                     </div>
                   </li>
                 ))}

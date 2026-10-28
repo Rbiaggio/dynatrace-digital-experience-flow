@@ -19,7 +19,7 @@ import type {
   CodigoErroLlm, MotorLlm, OportunidadeAnalisada, RegistroLlm, RespostaLlm, RespostaErro, RespostaIniciar, RespostaOportunidade, RespostaSintese,
   ResultadoLlm, ResultadoOportunidade, SinteseLlm, UsoLlm,
 } from "../../ui/app/lib/llmCliente";
-import { CATALOGO_INICIATIVAS, nomeServico, type Iniciativa } from "./catalogoIniciativas";
+import { CATALOGO_INICIATIVAS, nomeServico, nomeServicoEn, type Iniciativa } from "./catalogoIniciativas";
 import { chamarLLM, ErroLLM, llmConfigurado, motorDe, PADRAO_LLM, type ConfigLLM, type CodigoLLM, type RespostaLLM } from "./chamadaLlm";
 import { lerOportunidade, lerSintese, markdownDaAnalise, markdownLegado, montarPedidoOportunidade, montarPedidoSintese, type Idioma } from "./promptLlm";
 import {
@@ -179,11 +179,13 @@ export function resultadoDe(a: AnaliseGuardada, ops: (OpGuardada | null)[], agor
   const prontas = oportunidades.filter((o) => o.estado === "ok").length, falhas = oportunidades.filter((o) => o.estado === "erro").length;
   const sinteseVale = !!a.sintese && oportunidades.filter((o) => o.estado === "ok").every((o) => a.sintese!.cobre.includes(o.indice));
   const motor = motorPadrao(a, ops);
+  // 1.47.10: as análises de antes não guardavam o nome em inglês da iniciativa: completa pelo catálogo a cada leitura
+  const sintese = a.sintese?.dados ? { ...a.sintese.dados, iniciativasRecomendadas: a.sintese.dados.iniciativasRecomendadas.map((x) => ({ ...x, nomeServicoEn: x.nomeServicoEn ?? nomeServicoEn(x.servico) })) } : null;
   return {
-    id: a.id, formato: "estrutural", oportunidades, sintese: a.sintese?.dados ?? null,
+    id: a.id, formato: "estrutural", oportunidades, sintese,
     estado: { total: oportunidades.length, prontas, falhas, pendentes: oportunidades.length - prontas - falhas, sintese: !!a.sintese, completa: prontas === oportunidades.length && sinteseVale },
     contexto: { periodo: a.contexto.periodo, escopo: a.contexto.escopo, coleta: a.contexto.coleta, sessoesPorDia: a.contexto.sessoesPorDia },
-    markdown: markdownDaAnalise(oportunidades, a.sintese?.dados ?? null, { motor, quando: a.sintese?.quando ?? a.primeiraOkEm ?? a.criadaEm, periodo: a.periodo, idioma: a.idioma }),
+    markdown: markdownDaAnalise(oportunidades, sintese, { motor, quando: a.sintese?.quando ?? a.primeiraOkEm ?? a.criadaEm, periodo: a.periodo, idioma: a.idioma }),
     motor, quando: a.primeiraOkEm ?? a.criadaEm, por: a.por, periodo: a.periodo, usoConfirmado: a.usoConfirmado,
     sinteseMeta: a.sintese ? { quando: a.sintese.quando, ms: a.sintese.ms, tokens: a.sintese.tokens } : null,
   };

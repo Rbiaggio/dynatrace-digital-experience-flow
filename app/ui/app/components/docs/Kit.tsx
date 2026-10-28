@@ -3,8 +3,8 @@
    tarifa de contrato. Cada sub-aba é um componente em components/docs/Doc*.tsx montado só com estas peças. */
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { t } from "../../lib/i18n";
-import { FIGURAS } from "./figuras";
+import { t, idiomaAtual } from "../../lib/i18n";
+import { FIGURAS, FIGURAS_EN } from "./figuras";
 
 /** Seção (h3) com âncora. Dentro de um Doc com mais de uma seção, cada seção vira uma abinha (o título é o rótulo). */
 interface PropsSecao { id?: string; titulo: string; children: React.ReactNode }
@@ -119,7 +119,8 @@ export const Nota: React.FC<{ tipo?: "nota" | "dica" | "atencao"; children: Reac
     figura abre a versão grande (tamanho original quando o print é mais largo que a reduzida) numa sobreposição com rolagem,
     fechada pelo ×, pelo Esc ou clicando fora da imagem. */
 export const Figura: React.FC<{ id: string; legenda: string }> = ({ id, legenda }) => {
-  const f = FIGURAS[id];
+  // 1.47.10: na tela em inglês, o print da tela em inglês, quando existe
+  const f = (idiomaAtual() === "en" ? FIGURAS_EN[id] : undefined) ?? FIGURAS[id];
   const [aberta, setAberta] = useState(false);
   useEffect(() => {
     if (!aberta) return;

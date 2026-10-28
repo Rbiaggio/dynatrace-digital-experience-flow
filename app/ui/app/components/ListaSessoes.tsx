@@ -130,7 +130,7 @@ export const ListaSessoes: React.FC<Props> = ({ app, todas, apps, janela, robos,
                   <span className="in-sub">
                     {multi ? <ChipApp apps={apps} id={s.app} /> : null}
                     {s.saiu ? <span className="in-motivo erro">{t("Saiu após o erro", "Left after the error")}</span> : null}
-                    {s.saiu ? " " : ""}{t("Terminou em", "Ended on")} {nomePagina(s.fim)} · {s.navs === 1 ? t("1 página", "1 page") : t(`${formatarInt(s.navs)} páginas`, `${formatarInt(s.navs)} pages`)} · {s.erros === 1 ? t("1 erro", "1 error") : t(`${formatarInt(s.erros)} erros`, `${formatarInt(s.erros)} errors`)}
+                    {s.saiu ? " " : ""}{t("Terminou em", "Ended on")} {nomePagina(s.fim)} · {s.navs > 0 ? `${s.navs === 1 ? t("1 página", "1 page") : t(`${formatarInt(s.navs)} páginas`, `${formatarInt(s.navs)} pages`)} · ` : ""}{s.erros === 1 ? t("1 erro", "1 error") : t(`${formatarInt(s.erros)} erros`, `${formatarInt(s.erros)} errors`)}
                   </span>
                 </span>
                 <LinksSessao id={s.sessao} inicio={s.inicio} fim={s.fimSessao} hasReplay={s.hasReplay} temErro temCrash={s.erroTipo === "crash"} replayDaApp={replayDaApp(s.app, apps, mapaReplay)} />

@@ -101,7 +101,7 @@ export const JourneyPanel: React.FC<Props> = ({ jornada, funil, erroFunil, grafo
                 </li>
                 {prox && i < jornada.passos.length - 1 && (
                   prox.dropOff === 0
-                    ? <li className="jf-perda zero"><span className="jf-seta">↓</span>{t("todos seguiram", "everyone continued")}</li>
+                    ? <li className="jf-perda zero"><span className="jf-seta">↓</span> {t("todos seguiram", "everyone continued")}</li>
                     : <li className={`jf-perda${aberta ? " aberta" : ""}`}>
                         <button className="jf-perda-linha" onClick={() => abrir(k)} aria-expanded={aberta}>
                           <span className="jf-seta">↓</span>

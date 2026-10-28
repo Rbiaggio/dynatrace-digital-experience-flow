@@ -175,11 +175,15 @@ export function exemplosDe(...ls: Record<string, unknown>[]): ExemploErro[] {
   const out: ExemploErro[] = [];
   const normal = (x: Record<string, unknown>): ExemploErro => ({ h: x.h == null ? null : String(x.h), t: x.t == null || x.t === "" ? null : String(x.t), s: x.s == null ? null : String(x.s), d: x.d == null || !Number.isFinite(Number(x.d)) ? null : Number(x.d) });
   for (const l of ls) {
+    const antes = out.length;
     if (Array.isArray(l.amostras)) for (const x of l.amostras) if (x && typeof x === "object") out.push(normal(x as Record<string, unknown>));
     if (Array.isArray(l.exemplos)) for (const x of l.exemplos) if (x && typeof x === "object") out.push(normal(x as Record<string, unknown>));
     for (const j of Array.isArray(l.amostras_j) ? l.amostras_j : l.amostras_j != null ? [l.amostras_j] : []) {
       try { const v = JSON.parse(String(j)); if (Array.isArray(v)) for (const x of v) if (x && typeof x === "object") out.push(normal(x)); } catch { /* fora */ }
     }
+    // 1.47.10: as listas de texto (de antes) só valem para a linha SEM exemplo completo: numa linha já fechada elas saem dos
+    // exemplos filtradas uma a uma (lib/aovivo.ts) e, desalinhadas, formavam um par trace x sessão que não existe (exemplo sem hora)
+    if (out.length > antes) continue;
     const ts = typeof l.amostra_t === "string" ? l.amostra_t.split(SEP_AMOSTRA) : Array.isArray(l.amostra_t) ? l.amostra_t.map(String) : [];
     const ss = typeof l.amostra_s === "string" ? l.amostra_s.split(SEP_AMOSTRA) : Array.isArray(l.amostra_s) ? l.amostra_s.map(String) : [];
     for (let i = 0; i < Math.max(ts.length, ss.length); i++) out.push({ h: null, t: ts[i] || null, s: ss[i] || null, d: null });

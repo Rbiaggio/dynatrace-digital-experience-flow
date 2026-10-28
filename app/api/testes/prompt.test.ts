@@ -2,11 +2,12 @@
    só com medida real e o indicador do Digital Experience Flow) e a síntese (SÓ os resultados das oportunidades e o catálogo, nada do dossiê). */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { montarPedidoOportunidade, montarPedidoSintese, lerOportunidade, resumoParaSintese } from "../lib/promptLlm";
+import { montarPedidoOportunidade, montarPedidoSintese, lerOportunidade, lerSintese, resumoParaSintese } from "../lib/promptLlm";
 import { coletarDossies } from "../../ui/app/lib/dossie";
 import type { OportunidadeAnalisada } from "../../ui/app/lib/llmCliente";
 import { entradaDossieComPii, PII } from "./falsos/fixture";
 import { OP_TESTE } from "./falsos/servidorLLM";
+import { opExemplo, sinteseExemplo } from "./falsos/analiseExemplo";
 
 test("pedido da oportunidade: o dossiê entre marcadores, as regras e o esquema; sem PII", async () => {
   const c = await coletarDossies(entradaDossieComPii());
@@ -34,4 +35,21 @@ test("pedido da síntese: só os resultados das oportunidades prontas e o catál
   assert.ok(!p.usuario.includes("<dossie>") && !p.usuario.includes("\"secoes\"") && !p.usuario.includes("tempo_por_salto_ms"), "o dossiê foi junto");
   for (const regra of [/causas estruturais COMUNS/, /agrupamento falso/, /30, 60 e 90 dias/, /catálogo/, /Sem preço/]) assert.match(p.sistema, regra);
   assert.ok(p.usuario.length < montarPedidoOportunidade(c.dossies[0], c.contexto).usuario.length * ops.length);
+});
+
+test("LLM simulado da prévia e dos prints: cada causa liga as oportunidades do mesmo tipo, lidas do pedido", async () => {
+  const c = await coletarDossies(entradaDossieComPii());
+  const r = lerOportunidade(JSON.stringify(OP_TESTE))!;
+  // as 4 do LAB: a falha de /api/pix, dois erros de JavaScript e a chamada lenta de /api/ofertas
+  const tipos = ["falha-backend", "erro-javascript", "erro-javascript", "chamada-lenta"];
+  const ops: OportunidadeAnalisada[] = tipos.map((tipo, i) => ({ indice: i, id: `o${i + 1}`, titulo: `oportunidade ${i + 1}`, tipo, canal: "web", aplicacoes: ["app"], dossieBytes: 1, estado: "ok", resultado: r, erro: null, quando: null, ms: null, tokens: null }));
+  const p = montarPedidoSintese(ops, c.contexto);
+  const s = lerSintese(JSON.stringify(sinteseExemplo({ system: p.sistema, messages: [{ role: "user", content: p.usuario }] })), ops.map((o) => o.id))!;
+  assert.deepEqual(s.causasComuns.map((x) => x.oportunidades), [["o1"], ["o2", "o3"], ["o4"]]);
+  assert.match(s.causasComuns[2].causa, /chamada lenta/);
+  assert.deepEqual(s.priorizacao.map((x) => x.id), ["o1", "o2", "o4", "o3"]);
+  assert.deepEqual(s.ondas.find((w) => w.onda === "90")?.oportunidades, ["o4"]);
+  // a oportunidade: o texto do tipo do dossiê
+  const po = montarPedidoOportunidade({ ...c.dossies[0], id: "o3", tipo: "erro-javascript" }, c.contexto);
+  assert.match(opExemplo({ system: po.sistema, messages: [{ role: "user", content: po.usuario }] }).causa_raiz.afirmacao, /exceção não tratada/);
 });

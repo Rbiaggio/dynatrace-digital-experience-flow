@@ -58,12 +58,14 @@ export interface SinteseLlm {
   causasComuns: { causa: string; oportunidades: string[]; evidencias: string[]; oQueSepara: string; mudancaEstrutural: string; beneficioSessoesMes: number | null; confianca: Confianca }[];
   priorizacao: { id: string; ordem: number; razao: string }[];
   ondas: { onda: Onda; objetivo: string; acoes: string[]; oportunidades: string[]; indicadorDef: string }[];
-  iniciativasRecomendadas: { servico: string; nomeServico: string; oportunidades: string[]; comoAjuda: string }[];
+  iniciativasRecomendadas: { servico: string; nomeServico: string; /** 1.47.10 (as de antes não têm: vale o nome em português) */ nomeServicoEn?: string; oportunidades: string[]; comoAjuda: string }[];
   oQueFaltaMedir: string[];
 }
 
 /** Qual motor respondeu: sempre dito na resposta (nunca troca de motor em silêncio). */
 export interface MotorLlm { nome: string; provedor: "api-messages" | "simulado"; modelo: string; simulado: boolean }
+/** O nome do motor na língua da tela (1.47.10): o simulado dos testes vem da função em português. */
+export const nomeMotor = (m: Pick<MotorLlm, "nome" | "simulado">) => (m.simulado ? ((globalThis as { __DEF_IDIOMA?: string }).__DEF_IDIOMA === "en" ? "simulated LLM (local test server)" : "LLM simulado (servidor local de teste)") : m.nome);
 export interface QuemUsou { nome: string; email: string; quando: string }
 export interface UsoLlm {
   /** e-mail liberado: sem limite */

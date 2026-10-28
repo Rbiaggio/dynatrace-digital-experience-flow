@@ -389,7 +389,7 @@ const Paginas: React.FC<{ dados: DadosInicio; chipApp: ((id: string) => React.Re
                 <td><span className="in-cor" style={{ background: CORES[i % CORES.length] }} aria-hidden="true" /><span className="in-pagina-nome" title={p.view}>{p.view}</span>{chipApp && <span className="in-pagina-chip">{chipApp(p.app)}</span>}</td>
                 <td><b>{pctTexto(p.pctVisitas)}</b></td>
                 <td>{formatarInt(p.visitas)}</td>
-                <td>{p.p75Ms != null && p.p75Ms > 0 ? formatarMs(p.p75Ms) : "–"}</td>
+                <td>{p.p75Ms != null && p.p75Ms > 0 ? formatarMs(p.p75Ms) : "-"}</td>
                 <td className={p.erros > 0 ? "erro" : "in-apagado"}>{p.erros > 0 ? <button className="painel-link erro" onClick={(e) => { e.stopPropagation(); aoAbrirPagina(p.app, p.view, "erros"); }}>{formatarInt(p.erros)}</button> : "0"}</td>
               </tr>
             ))}

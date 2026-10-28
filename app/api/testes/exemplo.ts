@@ -26,7 +26,8 @@ const estado = new EstadoMemoria();
 const d: Dependencias = {
   estado, usuario: () => ({ id: "u-1", nome: "Ana Usuária", email: "ana@usuarios.example" }),
   ambiente: () => ({ id: "abc12345", url: "https://abc12345.apps.dynatrace.com" }), versaoApp: () => "1.35.0",
-  llm: { apiKey: "sk-teste-simulado", baseURL: srv.url("ok"), model: "modelo-teste", liberados: ["@empresa.example"] },
+  // a Ana entra na lista de e-mails extras: sem isso a regra de quem pode pedir recusa o exemplo (1.47.10)
+  llm: { apiKey: "sk-teste-simulado", baseURL: srv.url("ok"), model: "modelo-teste", liberados: ["ana@usuarios.example"] },
 };
 const chamar = async (e: EntradaLlm): Promise<RespostaLlm> => JSON.parse(JSON.stringify(await executar(JSON.parse(JSON.stringify(e)), d)));
 const fim = await analisarComLlm(async () => coleta, () => undefined, { chamar });

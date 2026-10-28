@@ -10,7 +10,7 @@ It is **off by default**: without configuration the button does not show for any
 
 ## What the result looks like
 
-![LLM analysis result (simulated LLM)](../app/ui/assets/docs/llm-resultado.jpg)
+![LLM analysis result (simulated LLM)](../app/ui/assets/docs/en/llm-resultado.jpg)
 
 The window reads from the overview to the detail:
 
