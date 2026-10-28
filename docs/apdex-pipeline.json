@@ -1,0 +1,49 @@
+{
+  "customId": "apdex-web-vitals",
+  "displayName": "Apdex Web Vitals",
+  "routing": "routable",
+  "metadataList": [],
+  "processing": {
+    "processors": [
+      {
+        "id": "apdex_core_web_vitals",
+        "type": "dql",
+        "description": "Apdex per page load from the Core Web Vitals (LCP, INP, CLS) with Google's public thresholds: good = 1, needs improvement = 0.5, poor = 0; apdex_score is the average of the vitals the load has",
+        "enabled": true,
+        "matcher": "frontend.type == \"web\" and characteristics.has_page_summary == true and (isNotNull(web_vitals.largest_contentful_paint) or isNotNull(web_vitals.interaction_to_next_paint) or isNotNull(web_vitals.cumulative_layout_shift))",
+        "dql": {
+          "script": "fieldsAdd cwv_lcp = if(isNull(web_vitals.largest_contentful_paint), null, else: if(toLong(web_vitals.largest_contentful_paint) <= 2500000000, 1.0, else: if(toLong(web_vitals.largest_contentful_paint) <= 4000000000, 0.5, else: 0.0)))\n| fieldsAdd cwv_inp = if(isNull(web_vitals.interaction_to_next_paint), null, else: if(toLong(web_vitals.interaction_to_next_paint) <= 200000000, 1.0, else: if(toLong(web_vitals.interaction_to_next_paint) <= 500000000, 0.5, else: 0.0)))\n| fieldsAdd cwv_cls = if(isNull(web_vitals.cumulative_layout_shift), null, else: if(toDouble(web_vitals.cumulative_layout_shift) <= 0.1, 1.0, else: if(toDouble(web_vitals.cumulative_layout_shift) <= 0.25, 0.5, else: 0.0)))\n| fieldsAdd cwv_n = if(isNotNull(cwv_lcp), 1, else: 0) + if(isNotNull(cwv_inp), 1, else: 0) + if(isNotNull(cwv_cls), 1, else: 0)\n| fieldsAdd apdex_score = (coalesce(cwv_lcp, 0.0) + coalesce(cwv_inp, 0.0) + coalesce(cwv_cls, 0.0)) / toDouble(cwv_n)\n| fieldsRemove cwv_lcp, cwv_inp, cwv_cls, cwv_n"
+        }
+      }
+    ]
+  },
+  "metricExtraction": {
+    "processors": [
+      {
+        "id": "apdex_metric",
+        "type": "valueMetric",
+        "description": "custom.rum.web_vitals.apdex_score: the metric the Digital Experience Flow Overview reads (Experience card)",
+        "enabled": true,
+        "matcher": "isNotNull(apdex_score)",
+        "valueMetric": {
+          "metricKey": "custom.rum.web_vitals.apdex_score",
+          "field": "apdex_score",
+          "dimensions": [
+            { "extractionType": "field", "sourceFieldName": "frontend.name" },
+            { "extractionType": "field", "sourceFieldName": "view.name" },
+            { "extractionType": "field", "sourceFieldName": "browser.name" },
+            { "extractionType": "field", "sourceFieldName": "os.name" }
+          ]
+        }
+      }
+    ]
+  },
+  "securityContext": { "processors": [] },
+  "costAllocation": { "processors": [] },
+  "productAllocation": { "processors": [] },
+  "storage": { "processors": [] },
+  "smartscapeNodeExtraction": { "processors": [] },
+  "smartscapeEdgeExtraction": { "processors": [] },
+  "davis": { "processors": [] },
+  "dataExtraction": { "processors": [] }
+}

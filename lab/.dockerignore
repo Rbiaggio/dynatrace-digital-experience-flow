@@ -1,0 +1,5 @@
+.env
+loadgen/out/
+loadgen/node_modules/
+api/node_modules/
+**/__pycache__/

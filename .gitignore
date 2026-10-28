@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.dt-app/
+*.log
+.env
+lab/.env
+lab/loadgen/out/
+__pycache__/
+
+# LLM key (app/api/lib/llm.local.example.ts is the template): never in git
+app/api/lib/llm.local.ts

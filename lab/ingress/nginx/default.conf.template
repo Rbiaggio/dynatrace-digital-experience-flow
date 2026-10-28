@@ -1,0 +1,32 @@
+# Ingress da rede interna (banco-ingress): recebe do gateway da DMZ e distribui para as APIs de canal (BFFs), como um
+# ingress controller de Kubernetes. É o único que conhece os serviços internos.
+server {
+    listen 80;
+    server_name ${NOME_SERVIDOR};   # nome do serviço do nginx no Dynatrace (banco-ingress)
+
+    location = /saude { access_log off; return 200 "ok\n"; }
+
+    # BFF dos canais web (PF e PJ)
+    location /api/ {
+        resolver 127.0.0.11 valid=10s ipv6=off;
+        set $bff_web http://api:3000;
+        proxy_pass $bff_web;
+        proxy_http_version 1.1;
+        proxy_set_header Host banco-api;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    # BFF do app mobile
+    location /v1/ {
+        resolver 127.0.0.11 valid=10s ipv6=off;
+        set $bff_mobile http://mobile-api:3000;
+        proxy_pass $bff_mobile;
+        proxy_http_version 1.1;
+        proxy_set_header Host banco-mobile-api;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    location / { return 404; }
+}

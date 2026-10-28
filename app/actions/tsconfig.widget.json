@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "strict": true,
+    "declaration": true,
+    "emitDecoratorMetadata": true,
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "importHelpers": false,
+    "jsx": "react",
+    "skipLibCheck": true,
+    "lib": ["DOM", "DOM.Iterable", "esnext"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "target": "ESNext"
+  },
+  "include": ["**/*.widget.tsx", "declarations.d.ts"]
+}

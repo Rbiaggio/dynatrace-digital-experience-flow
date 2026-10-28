@@ -1,0 +1,442 @@
+services:
+  demo-app:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+      args:
+        DT_PAAS_TOKEN: ${DT_PAAS_TOKEN:-}
+        DT_TENANT_URL: ${DT_TENANT_URL:-}
+    container_name: banco-demo-app
+    ports:
+      - "8087:80"
+    environment:
+      # a tag do RUM e injetada pelo OneAgent do nginx (aplicacao monitorada pelo OneAgent desde 07/10/2026);
+      # vazio = o marcador __RUM_TAG__ do index.html some
+      RUM_TAG: ""
+      NOME_SERVIDOR: banco-web-pf
+    volumes:
+      - ./demo-app/site:/usr/share/nginx/html:ro
+      - ./demo-app/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+    depends_on:
+      gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # ---- entrada como num banco típico (07/10/2026): API gateway na DMZ -> ingress na rede interna -> APIs de canal (BFFs).
+  # Os servidores web (banco-web-pf/pj) só entregam as páginas e repassam /api ao gateway; o app mobile chega ao
+  # gateway pelo túnel. Só o gateway e os servidores web ficam expostos; o resto é rede interna.
+  gateway:
+    hostname: banco-gateway
+    build:
+      context: .
+      dockerfile: web/Dockerfile   # mesmo nginx com OneAgent dos servidores web
+      args:
+        DT_PAAS_TOKEN: ${DT_PAAS_TOKEN:-}
+        DT_TENANT_URL: ${DT_TENANT_URL:-}
+    container_name: banco-gateway
+    ports:
+      - "8090:80"
+    environment:
+      NOME_SERVIDOR: banco-gateway
+    volumes:
+      - ./gateway/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+    depends_on:
+      ingress:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://127.0.0.1/saude"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  ingress:
+    hostname: banco-ingress
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+      args:
+        DT_PAAS_TOKEN: ${DT_PAAS_TOKEN:-}
+        DT_TENANT_URL: ${DT_TENANT_URL:-}
+    container_name: banco-ingress
+    environment:
+      NOME_SERVIDOR: banco-ingress
+    volumes:
+      - ./ingress/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+    depends_on:
+      api:
+        condition: service_healthy
+      mobile-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://127.0.0.1/saude"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  api:
+    hostname: banco-api          # host.name estável para o roteamento de spans (OpenPipeline)
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+      args:
+        DT_PAAS_TOKEN: ${DT_PAAS_TOKEN:-}
+        DT_TENANT_URL: ${DT_TENANT_URL:-}
+    container_name: banco-api
+    environment:
+      CONTAS_URL: http://contas:5000
+      IDENTIDADE_URL: http://identidade:5000
+      PAGAMENTOS_URL: http://pagamentos:5000
+      OFERTAS_URL: http://ofertas:3000
+      DT_APPLICATIONID: banco-api
+    depends_on:
+      contas:
+        condition: service_healthy
+      identidade:
+        condition: service_healthy
+      pagamentos:
+        condition: service_healthy
+      ofertas:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 3s
+      retries: 6
+
+  # ---- servicos de dominio (07/10/2026): cada um com o proprio banco; as APIs de canal (web e mobile) orquestram
+    restart: unless-stopped
+  contas:                        # contas, razao de lancamentos, extrato, abertura, CPF, cartao (era o banco-core)
+    hostname: banco-contas       # host.name estavel para o roteamento de spans (OpenPipeline)
+    build:
+      context: .
+      dockerfile: contas/Dockerfile
+      args:
+        DT_PAAS_TOKEN: ${DT_PAAS_TOKEN:-}
+        DT_TENANT_URL: ${DT_TENANT_URL:-}
+    container_name: banco-contas
+    environment:
+      DATABASE_URL: postgresql://banco:banco@db:5432/banco
+      DT_APPLICATIONID: banco-contas   # nome do process group no Dynatrace (sem isso fica "gunicorn")
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:5000/health', timeout=3).status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 6
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    container_name: banco-db
+    environment:
+      POSTGRES_USER: banco
+      POSTGRES_PASSWORD: banco
+      POSTGRES_DB: banco
+    volumes:
+      - banco-db:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U banco -d banco"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  identidade:                    # login, logout, recuperacao de senha
+    hostname: banco-identidade
+    build:
+      context: .
+      dockerfile: identidade/Dockerfile
+      args:
+        DT_PAAS_TOKEN: ${DT_PAAS_TOKEN:-}
+        DT_TENANT_URL: ${DT_TENANT_URL:-}
+    container_name: banco-identidade
+    environment:
+      DATABASE_URL: postgresql://identidade:identidade@identidade-db:5432/identidade
+      DT_APPLICATIONID: banco-identidade
+    depends_on:
+      identidade-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:5000/health', timeout=3).status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 6
+    restart: unless-stopped
+
+  identidade-db:
+    image: postgres:16-alpine
+    container_name: banco-identidade-db
+    environment:
+      POSTGRES_USER: identidade
+      POSTGRES_PASSWORD: identidade
+      POSTGRES_DB: identidade
+    volumes:
+      - banco-identidade-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U identidade -d identidade"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  pagamentos:                    # Pix e comprovante; debita a conta no servico de contas
+    hostname: banco-pagamentos
+    build:
+      context: .
+      dockerfile: pagamentos/Dockerfile
+      args:
+        DT_PAAS_TOKEN: ${DT_PAAS_TOKEN:-}
+        DT_TENANT_URL: ${DT_TENANT_URL:-}
+    container_name: banco-pagamentos
+    environment:
+      DATABASE_URL: postgresql://pagamentos:pagamentos@pagamentos-db:5432/pagamentos
+      DT_APPLICATIONID: banco-pagamentos
+      CONTAS_URL: http://contas:5000
+    depends_on:
+      pagamentos-db:
+        condition: service_healthy
+      contas:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:5000/health', timeout=3).status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 6
+    restart: unless-stopped
+
+  pagamentos-db:
+    image: postgres:16-alpine
+    container_name: banco-pagamentos-db
+    environment:
+      POSTGRES_USER: pagamentos
+      POSTGRES_PASSWORD: pagamentos
+      POSTGRES_DB: pagamentos
+    volumes:
+      - banco-pagamentos-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pagamentos -d pagamentos"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  ofertas:                       # vitrine (ofertas por canal e tarifas) em cache Redis
+    hostname: banco-ofertas
+    build:
+      context: .
+      dockerfile: ofertas/Dockerfile
+      args:
+        DT_PAAS_TOKEN: ${DT_PAAS_TOKEN:-}
+        DT_TENANT_URL: ${DT_TENANT_URL:-}
+    container_name: banco-ofertas
+    environment:
+      REDIS_URL: redis://ofertas-cache:6379
+      DT_APPLICATIONID: banco-ofertas
+    depends_on:
+      ofertas-cache:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  ofertas-cache:
+    image: redis:7-alpine
+    container_name: banco-ofertas-cache
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # ---- backend do app mobile (iOS e Android): BFF proprio + banco proprio; servicos de dominio compartilhados
+    restart: unless-stopped
+  mobile-db:
+    image: postgres:16-alpine
+    container_name: banco-mobile-db
+    environment:
+      POSTGRES_USER: mobile
+      POSTGRES_PASSWORD: mobile
+      POSTGRES_DB: mobile
+    volumes:
+      - banco-mobile-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mobile -d mobile"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  mobile-api:
+    hostname: banco-mobile-api
+    build:
+      context: .
+      dockerfile: mobile-api/Dockerfile
+      args:
+        DT_PAAS_TOKEN: ${DT_PAAS_TOKEN:-}
+        DT_TENANT_URL: ${DT_TENANT_URL:-}
+    container_name: banco-mobile-api
+    environment:
+      CONTAS_URL: http://contas:5000
+      IDENTIDADE_URL: http://identidade:5000
+      PAGAMENTOS_URL: http://pagamentos:5000
+      OFERTAS_URL: http://ofertas:3000
+      MOBILE_DB_URL: postgresql://mobile:mobile@mobile-db:5432/mobile
+      DT_APPLICATIONID: banco-mobile-api
+    depends_on:
+      contas:
+        condition: service_healthy
+      identidade:
+        condition: service_healthy
+      pagamentos:
+        condition: service_healthy
+      ofertas:
+        condition: service_healthy
+      mobile-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  # ---- tunel publico (Cloudflare quick tunnel) para o app mobile (emulador local ou GitHub Actions) chegar ao lab.
+  # Expoe SO o API gateway da DMZ, como a internet. O endereco (https://<aleatorio>.trycloudflare.com) muda
+  # a cada reinicio do container:
+  #   docker logs banco-tunel-mobile 2>&1 | grep -o "https://[a-z0-9-]*\.trycloudflare\.com" | tail -1
+    restart: unless-stopped
+  tunel-mobile:
+    image: cloudflare/cloudflared:latest
+    # só com o perfil "mobile" (docker compose --profile mobile up): expõe o gateway num túnel público para um app
+    # mobile de teste; o app mobile de demonstração não faz parte deste repositório
+    profiles: ["mobile"]
+    container_name: banco-tunel-mobile
+    command: tunnel --no-autoupdate --protocol http2 --url http://gateway:80   # http2: o QUIC (UDP) cai em algumas redes
+    depends_on:
+      gateway:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ---- segundo canal: Banco Demo Empresas (aplicacao RUM propria, mesmo backend /api)
+  demo-empresas:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+      args:
+        DT_PAAS_TOKEN: ${DT_PAAS_TOKEN:-}
+        DT_TENANT_URL: ${DT_TENANT_URL:-}
+    container_name: banco-empresas-app
+    ports:
+      - "8089:80"
+    environment:
+      RUM_TAG: ""                # tag injetada pelo OneAgent do nginx
+      NOME_SERVIDOR: banco-web-pj
+    volumes:
+      - ./demo-empresas/site:/usr/share/nginx/html:ro
+      - ./demo-app/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+    depends_on:
+      gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  loadgen-empresas:
+    build: ./loadgen
+    container_name: banco-empresas-loadgen
+    depends_on:
+      demo-empresas:
+        condition: service_healthy
+    environment:
+      PERFIL: empresas
+      BASE_URL: http://demo-empresas
+      PARALELO: ${PARALELO_EMPRESAS:-1}
+      PAUSA_MS: ${PAUSA_MS:-2000}
+      TOTAL: ${TOTAL:-0}
+    volumes:
+      - ./loadgen/out:/out
+    restart: unless-stopped
+
+  # ---- terceiro canal: Portal PJ em MICRO-FRONTENDS: cada módulo
+  # (/portal/, /inicio/, /pix/...) carrega a página inteira, o contador de páginas do RUM volta a 1 a cada troca e a
+  # ligação entre as páginas só existe pela origem (view.source.name). Aplicação RUM própria.
+  demo-portal:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+      args:
+        DT_PAAS_TOKEN: ${DT_PAAS_TOKEN:-}
+        DT_TENANT_URL: ${DT_TENANT_URL:-}
+    container_name: banco-portal-app
+    ports:
+      - "8091:80"
+    environment:
+      RUM_TAG: ""                # tag injetada pelo OneAgent do nginx
+      NOME_SERVIDOR: banco-web-portal
+    volumes:
+      - ./demo-portal/site:/usr/share/nginx/html:ro
+      - ./demo-app/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+    depends_on:
+      gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://127.0.0.1/portal/"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # carga do portal PJ: por padrão PARA sozinha depois de TOTAL_PORTAL jornadas (cada jornada = 1 sessão RUM
+  # cobrada); carga contínua só com TOTAL_PORTAL=0
+  loadgen-portal:
+    build: ./loadgen
+    container_name: banco-portal-loadgen
+    depends_on:
+      demo-portal:
+        condition: service_healthy
+    environment:
+      PERFIL: portal
+      BASE_URL: http://demo-portal
+      PARALELO: ${PARALELO_PORTAL:-1}
+      PAUSA_MS: ${PAUSA_MS:-2000}
+      TOTAL: ${TOTAL_PORTAL:-300}
+    volumes:
+      - ./loadgen/out:/out
+    restart: "no"
+
+  loadgen:
+    build: ./loadgen
+    container_name: banco-demo-loadgen
+    depends_on:
+      demo-app:
+        condition: service_healthy
+    environment:
+      PERFIL: varejo
+      BASE_URL: http://demo-app
+      PARALELO: ${PARALELO:-2}
+      PAUSA_MS: ${PAUSA_MS:-2000}
+      TOTAL: ${TOTAL:-0}
+    volumes:
+      - ./loadgen/out:/out
+    restart: unless-stopped
+
+volumes:
+  banco-db:
+  banco-mobile-db:
+  banco-identidade-db:
+  banco-pagamentos-db:

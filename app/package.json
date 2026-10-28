@@ -1,0 +1,54 @@
+{
+  "name": "digital-experience-flow",
+  "version": "1.46.3",
+  "author": "Rodrigo Biaggio",
+  "private": true,
+  "repository": { "type": "git", "url": "https://github.com/Rbiaggio/dynatrace-digital-experience-flow" },
+  "description": "Digital Experience Flow: a Dynatrace app for frontend journeys, funnels and root causes on RUM on Grail",
+  "scripts": {
+    "prebuild": "node scripts/garantir-llm-local.mjs",
+    "build": "dt-app build",
+    "prestart": "node scripts/garantir-llm-local.mjs",
+    "start": "dt-app dev",
+    "predeploy": "node scripts/garantir-llm-local.mjs",
+    "deploy": "dt-app deploy",
+    "test": "node scripts/testar.mjs",
+    "typecheck:api": "node scripts/garantir-llm-local.mjs && tsc --noEmit -p api/tsconfig.json",
+    "info": "dt-app info",
+    "typecheck": "tsc --noEmit -p ui/tsconfig.json"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@dynatrace-sdk/app-environment": "^1.1.5",
+    "@dynatrace-sdk/automation-action-utils": "0.43.1",
+    "@dynatrace-sdk/client-classic-environment-v2": "9.1.0",
+    "@dynatrace-sdk/client-platform-management-service": "^1.9.0",
+    "@dynatrace-sdk/client-query": "^1.27.0",
+    "@dynatrace-sdk/client-state": "^1.11.0",
+    "@dynatrace-sdk/navigation": "^2.3.1",
+    "@dynatrace-sdk/react-hooks": "^1.14.2",
+    "@dynatrace/strato-components": "^3.12.1",
+    "@dynatrace/strato-design-tokens": "^1.6.0",
+    "@dynatrace/strato-icons": "^2.5.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-intl": "7.1.14",
+    "react-is": "^18.3.1",
+    "react-router-dom": "^6.30.6"
+  },
+  "overrides": {
+    "react-intl": {
+      "typescript": "$typescript"
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "dt-app": "1.17.0",
+    "typescript": "^6.0.0"
+  }
+}

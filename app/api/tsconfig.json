@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "target": "esnext",
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "strict": true,
+    "noEmit": true,
+    "lib": ["esnext", "es2021.intl", "dom"],
+    "skipLibCheck": true,
+    "typeRoots": ["../node_modules/@types"],
+    "types": ["node"]
+  },
+  "exclude": ["testes"]
+}

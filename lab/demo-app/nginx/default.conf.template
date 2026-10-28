@@ -1,0 +1,33 @@
+server {
+    listen 80;
+    server_name ${NOME_SERVIDOR};   # nome do servico do nginx no Dynatrace (banco-web-pf, banco-web-pj)
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # injeta o snippet do RUM (variavel RUM_TAG do compose) no lugar do marcador do index.html
+    sub_filter '__RUM_TAG__' '${RUM_TAG}';
+    sub_filter_once on;
+    sub_filter_types text/html;
+
+    add_header Cache-Control "no-store";
+
+    # backend: mesma origem para o navegador; o servidor web só entrega as páginas e repassa /api ao API gateway da
+    # DMZ (banco-gateway), como um servidor web da frente faria. Quem distribui para a rede interna é o ingress.
+    location /api/ {
+        # resolve "gateway" a cada requisição pelo DNS do Docker: recriar o container muda o IP e, com o nome
+        # fixo no proxy_pass, o nginx guardava o IP antigo e devolvia 502 até ser reiniciado
+        resolver 127.0.0.11 valid=10s ipv6=off;
+        set $api_upstream http://gateway:80;
+        proxy_pass $api_upstream;
+        proxy_http_version 1.1;
+        proxy_set_header Host banco-gateway;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        # O navegador manda "Origin" em todo POST/PUT via fetch, mesmo na mesma origem. O OneAgent trata
+        # requisicao com Origin como cross-origin e NAO devolve o Server-Timing (que fecha a correlacao
+        # RUM x backend). Como aqui /api e sempre mesma origem, o cabecalho e removido antes do proxy.
+        proxy_set_header Origin "";
+    }
+
+    location / { try_files $uri /index.html; }
+}

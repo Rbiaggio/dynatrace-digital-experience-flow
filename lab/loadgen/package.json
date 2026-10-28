@@ -1,0 +1,9 @@
+{
+  "name": "banco-demo-loadgen",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Gerador de jornadas de usuário (Playwright) para o laboratório de fluxo RUM",
+  "main": "journeys.js",
+  "scripts": { "start": "node journeys.js" },
+  "dependencies": { "playwright": "1.55.0" }
+}

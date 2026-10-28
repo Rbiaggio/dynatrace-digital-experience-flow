@@ -1,0 +1,93 @@
+{
+  "$schema": "./.dt-app/app.config.schema.json",
+  "environmentUrl": "https://your-environment-id.apps.dynatrace.com/",
+  "app": {
+    "name": "Digital Experience Flow",
+    "version": "1.46.3",
+    "description": "Frontend journeys, funnels and root causes on RUM on Grail.",
+    "icon": "ui/assets/icon.svg",
+    "id": "my.digital.experience.flow",
+    "scopes": [
+      {
+        "name": "storage:user.events:read",
+        "comment": "so a Configuracao (id da aplicacao mobile ainda fora da copia) e a coleta da analise por LLM, sob demanda e com orcamento"
+      },
+      {
+        "name": "storage:spans:read",
+        "comment": "Onde falha no backend e a analise pela IA (sob demanda, com amostragem); a ligacao pagina -> servico roda no workflow"
+      },
+      {
+        "name": "storage:entities:read",
+        "comment": "backend do fluxo: quem chama quem (modelo de entidades, o mesmo do Smartscape) e nome dos servicos"
+      },
+      {
+        "name": "storage:buckets:read",
+        "comment": "exigido pelo fetch em qualquer tabela do Grail"
+      },
+      {
+        "name": "state:app-states:read",
+        "comment": "jornadas de negocio salvas (compartilhadas entre usuarios)"
+      },
+      {
+        "name": "state:app-states:write",
+        "comment": "salvar/excluir jornadas"
+      },
+      {
+        "name": "storage:metrics:read",
+        "comment": "metricas nativas gratis: Apdex, Web Vitals, abertura do app, volume dos servicos"
+      },
+      {
+        "name": "platform-management:effective-permissions:resolve",
+        "comment": "mostrar a engrenagem de configuracao so para administradores"
+      },
+      {
+        "name": "storage:bizevents:read",
+        "comment": "copia enxuta de navegacao, erro e chamada de API (business events journeyflow.passo)"
+      },
+      {
+        "name": "settings:objects:read",
+        "comment": "tela de Configuracao: ler pipelines e roteamentos do OpenPipeline (Settings 2.0)"
+      },
+      {
+        "name": "settings:objects:write",
+        "comment": "tela de Configuracao: criar/atualizar pipelines e roteamentos"
+      },
+      {
+        "name": "openpipeline:configurations:read",
+        "comment": "tela de Configuracao: OpenPipeline"
+      },
+      {
+        "name": "openpipeline:configurations:write",
+        "comment": "tela de Configuracao: OpenPipeline"
+      },
+      {
+        "name": "storage:bucket-definitions:read",
+        "comment": "tela de Configuracao: ler buckets"
+      },
+      {
+        "name": "storage:bucket-definitions:write",
+        "comment": "tela de Configuracao: criar buckets dedicados"
+      },
+      {
+        "name": "davis-copilot:conversations:execute",
+        "comment": "Analise do problema pela IA generativa da Dynatrace (Davis CoPilot API), como o usuario que clicou"
+      },
+      {
+        "name": "storage:events:read",
+        "comment": "Analise pela IA: problemas do Davis (dt.davis.problems) e mudancas/deploys (events) como evidencia"
+      },
+      {
+        "name": "storage:events:write",
+        "comment": "acao de workflow def-agregar: grava os agregados por fatia de 5 min (business events no bucket rum_flow_agregados)"
+      },
+      {
+        "name": "automation:workflows:read",
+        "comment": "Configuracao: saber se o workflow do DEF existe (so leitura; criar e pelo app Workflows, que o app abre preenchido)"
+      },
+      {
+        "name": "storage:system:read",
+        "comment": "Configuracao: consumo do app pela cobranca da Dynatrace (dt.system.events, BILLING_USAGE_EVENT); so administrador"
+      }
+    ]
+  }
+}

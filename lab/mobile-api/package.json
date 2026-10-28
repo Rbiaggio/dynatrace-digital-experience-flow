@@ -1,0 +1,9 @@
+{
+  "name": "banco-mobile-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "BFF do app mobile do Banco Demo: banco próprio (dispositivos, sessões, notificações, ofertas) e core compartilhado",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "dependencies": { "express": "^4.21.2", "pg": "^8.13.1" }
+}

@@ -1,0 +1,26 @@
+:root { --azul:#1d4ed8; --cinza:#f3f4f6; --texto:#111827; --borda:#e5e7eb; --ok:#15803d; --erro:#b91c1c; }
+* { box-sizing:border-box; }
+body { margin:0; font-family: system-ui, "Segoe UI", Roboto, sans-serif; color:var(--texto); background:var(--cinza); }
+.topo { display:flex; justify-content:space-between; align-items:center; padding:12px 24px; background:#fff; border-bottom:1px solid var(--borda); }
+.marca { font-weight:700; font-size:20px; color:var(--azul); text-decoration:none; }
+.agente { font-size:12px; color:#6b7280; }
+.agente.ok { color:var(--ok); }
+.agente.erro { color:var(--erro); }
+.conteudo { max-width:720px; margin:32px auto; padding:0 16px; }
+.cartao { background:#fff; border:1px solid var(--borda); border-radius:12px; padding:24px; margin-bottom:16px; }
+h1 { font-size:22px; margin:0 0 8px; }
+p { margin:0 0 16px; color:#374151; }
+.acoes { display:flex; gap:12px; flex-wrap:wrap; }
+button { cursor:pointer; border:0; border-radius:8px; padding:12px 18px; font-size:15px; font-weight:600; background:var(--azul); color:#fff; }
+button.secundario { background:#fff; color:var(--azul); border:1px solid var(--azul); }
+label { display:block; font-size:13px; margin:12px 0 4px; }
+input { width:100%; padding:10px; border:1px solid var(--borda); border-radius:8px; font-size:15px; }
+table { width:100%; border-collapse:collapse; margin-bottom:16px; }
+td, th { padding:8px; border-bottom:1px solid var(--borda); text-align:left; font-size:14px; }
+.rodape { text-align:center; font-size:12px; color:#9ca3af; padding:24px; }
+.erro { color:#b91c1c; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:10px; }
+
+/* abertura de conta e cartão */
+select { width: 100%; box-sizing: border-box; padding: 8px 10px; margin: 4px 0 10px; border: 1px solid #cbd5e1; border-radius: 6px; font: inherit; background: #fff; }
+.dica { color: #64748b; font-size: 13px; }
+.aviso { color: #92400e; background: #fef3c7; border-radius: 6px; padding: 8px 10px; }
