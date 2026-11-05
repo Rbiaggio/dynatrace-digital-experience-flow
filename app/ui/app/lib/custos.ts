@@ -21,7 +21,7 @@
    conferida contra o volume dos buckets no mesmo intervalo (cada peça lê a própria janela uma vez).
    É um TETO: conta a leitura ao vivo em toda carga de tela e não desconta o cache compartilhado de 5 min.
    Regras de cobrança que o modelo segue:
-   - consulta no Grail é cobrada pelos GiB lidos (o filtro num campo não reduz a leitura: o modelo não conta com isso);
+   - consulta no Grail é cobrada pelos GiB lidos (filtro direto no campo cru pode podar blocos, mas o modelo não conta com isso: é um teto);
    - retenção é cobrada pelo volume guardado (GiB-dia);
    - a cópia extraída pelo OpenPipeline não apareceu na cobrança de gravação no laboratório: sai à parte ("se cobrada");
      o que os workflows gravam pela API de business events entra como gravação;
